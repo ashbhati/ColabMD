@@ -71,7 +71,7 @@ export function DocumentList({
   const DocumentCard = ({ doc, isOwned }: { doc: Document; isOwned: boolean }) => (
     <div
       className={cn(
-        'group relative rounded-lg border bg-white p-4 shadow-sm transition-all hover:shadow-md',
+        'group relative rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 transition-all duration-150 hover:border-indigo-200 dark:hover:border-indigo-900 hover:bg-slate-50 dark:hover:bg-slate-800/50',
         deletingId === doc.id && 'opacity-50'
       )}
     >
@@ -85,28 +85,28 @@ export function DocumentList({
               if (e.key === 'Enter') handleSaveRename(doc.id)
               if (e.key === 'Escape') setEditingId(null)
             }}
-            className="flex-1 rounded border px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="flex-1 rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
             autoFocus
           />
           <button
             onClick={() => handleSaveRename(doc.id)}
-            className="text-sm text-indigo-600 hover:text-indigo-700"
+            className="text-sm text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300"
           >
             Save
           </button>
           <button
             onClick={() => setEditingId(null)}
-            className="text-sm text-gray-500 hover:text-gray-700"
+            className="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
           >
             Cancel
           </button>
         </div>
       ) : (
         <Link href={`/doc/${doc.id}`} className="block">
-          <h3 className="font-medium text-gray-900 group-hover:text-indigo-600 transition-colors">
+          <h3 className="font-medium text-slate-800 dark:text-slate-200 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
             {doc.title}
           </h3>
-          <div className="mt-2 flex items-center gap-2 text-sm text-gray-500">
+          <div className="mt-2 flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
             {!isOwned && doc.profiles && (
               <span className="flex items-center gap-1">
                 {doc.profiles.avatar_url ? (
@@ -117,17 +117,17 @@ export function DocumentList({
                     className="h-4 w-4 rounded-full"
                   />
                 ) : (
-                  <span className="flex h-4 w-4 items-center justify-center rounded-full bg-gray-200 text-[10px]">
+                  <span className="flex h-4 w-4 items-center justify-center rounded-full bg-gray-200 dark:bg-gray-700 text-[10px]">
                     {doc.profiles.display_name?.[0] || '?'}
                   </span>
                 )}
                 <span>{doc.profiles.display_name || 'Unknown'}</span>
-                <span className="text-gray-300">|</span>
+                <span className="text-gray-300 dark:text-gray-600">|</span>
               </span>
             )}
             <span>{formatDate(doc.updated_at)}</span>
             {doc.shared_permission && (
-              <span className="rounded bg-gray-100 px-1.5 py-0.5 text-xs capitalize">
+              <span className="rounded-full bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 px-2 py-0.5 text-xs capitalize">
                 {doc.shared_permission}
               </span>
             )}
@@ -142,7 +142,7 @@ export function DocumentList({
               e.preventDefault()
               handleStartRename(doc)
             }}
-            className="rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+            className="rounded-md p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800 dark:hover:text-slate-300 transition-colors"
             title="Rename"
           >
             <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -154,7 +154,7 @@ export function DocumentList({
               e.preventDefault()
               handleDelete(doc.id)
             }}
-            className="rounded p-1 text-gray-400 hover:bg-red-50 hover:text-red-600"
+            className="rounded-md p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950 dark:hover:text-red-400 transition-colors"
             title="Delete"
           >
             <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -169,11 +169,11 @@ export function DocumentList({
   return (
     <div className="space-y-8">
       <div className="flex items-center justify-between">
-        <h2 className="text-xl font-semibold text-gray-900">My Documents</h2>
+        <h2 className="text-lg font-semibold text-slate-800 dark:text-slate-200">My Documents</h2>
         <button
           onClick={onCreateDocument}
           disabled={isCreating}
-          className="flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-indigo-700 disabled:opacity-50"
+          className="flex items-center gap-2 rounded-lg bg-indigo-600 px-3.5 py-2 text-sm font-medium text-white transition-all duration-150 hover:bg-indigo-500 disabled:opacity-50"
         >
           {isCreating ? (
             <>
@@ -195,12 +195,12 @@ export function DocumentList({
       </div>
 
       {owned.length === 0 ? (
-        <div className="rounded-lg border-2 border-dashed border-gray-200 p-8 text-center">
-          <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div className="rounded-xl border-2 border-dashed border-slate-200 dark:border-slate-800 p-12 text-center">
+          <svg className="mx-auto h-10 w-10 text-slate-300 dark:text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
           </svg>
-          <p className="mt-4 text-gray-500">No documents yet</p>
-          <p className="mt-1 text-sm text-gray-400">Create your first document to get started</p>
+          <p className="mt-4 text-slate-500 dark:text-slate-400">No documents yet</p>
+          <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">Create your first document to get started</p>
         </div>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -212,7 +212,7 @@ export function DocumentList({
 
       {shared.length > 0 && (
         <>
-          <h2 className="text-xl font-semibold text-gray-900">Shared with Me</h2>
+          <h2 className="text-lg font-semibold text-slate-800 dark:text-slate-200">Shared with Me</h2>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {shared.map((doc) => (
               <DocumentCard key={doc.id} doc={doc} isOwned={false} />

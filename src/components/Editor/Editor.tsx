@@ -4,10 +4,12 @@ import { useEditor, EditorContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import Placeholder from '@tiptap/extension-placeholder'
 import { useLiveblocksExtension, FloatingComposer, FloatingThreads } from '@liveblocks/react-tiptap'
-import { useThreads } from '../../../liveblocks.config'
+import { useThreads, useOthers } from '../../../liveblocks.config'
 import { Toolbar } from './Toolbar'
+import { CommentsSidebar } from '@/components/Comments'
 import { useCallback, useEffect, useState } from 'react'
 import { cn } from '@/lib/utils'
+import { htmlToMarkdown, markdownToHtml } from '@/lib/markdown'
 
 interface EditorProps {
   documentId: string
@@ -18,11 +20,17 @@ interface EditorProps {
 export function Editor({ onSave }: EditorProps) {
   const liveblocks = useLiveblocksExtension()
   const { threads } = useThreads()
+  const others = useOthers()
   const [isSaving, setIsSaving] = useState(false)
+  const [viewMode, setViewMode] = useState<'wysiwyg' | 'markdown'>('wysiwyg')
+  const [markdownContent, setMarkdownContent] = useState('')
+  const [isCommentsSidebarOpen, setIsCommentsSidebarOpen] = useState(false)
 
   const editor = useEditor({
     extensions: [
-      StarterKit,
+      StarterKit.configure({
+        // History is managed by Liveblocks via Yjs
+      }),
       Placeholder.configure({
         placeholder: 'Start writing...',
       }),
@@ -31,13 +39,37 @@ export function Editor({ onSave }: EditorProps) {
     editorProps: {
       attributes: {
         class: cn(
-          'prose prose-slate max-w-none focus:outline-none',
-          'min-h-[500px] px-8 py-6'
+          'text-slate-800 dark:text-slate-200 max-w-none focus:outline-none',
+          'min-h-[500px] px-10 py-8',
+          'leading-relaxed',
+          // Typography styles
+          '[&_h1]:text-3xl [&_h1]:font-semibold [&_h1]:text-slate-900 [&_h1]:dark:text-slate-100 [&_h1]:mt-8 [&_h1]:mb-4',
+          '[&_h2]:text-2xl [&_h2]:font-semibold [&_h2]:text-slate-900 [&_h2]:dark:text-slate-100 [&_h2]:mt-6 [&_h2]:mb-3',
+          '[&_h3]:text-xl [&_h3]:font-medium [&_h3]:text-slate-900 [&_h3]:dark:text-slate-100 [&_h3]:mt-5 [&_h3]:mb-2',
+          '[&_p]:mb-4',
+          '[&_ul]:list-disc [&_ul]:pl-6 [&_ul]:mb-4',
+          '[&_ol]:list-decimal [&_ol]:pl-6 [&_ol]:mb-4',
+          '[&_li]:mb-1',
+          '[&_blockquote]:border-l-4 [&_blockquote]:border-indigo-300 [&_blockquote]:dark:border-indigo-700 [&_blockquote]:pl-4 [&_blockquote]:italic [&_blockquote]:text-slate-600 [&_blockquote]:dark:text-slate-400 [&_blockquote]:my-4',
+          '[&_code]:bg-slate-100 [&_code]:dark:bg-slate-800 [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:rounded [&_code]:text-sm [&_code]:font-mono',
+          '[&_pre]:bg-slate-900 [&_pre]:dark:bg-slate-950 [&_pre]:text-slate-100 [&_pre]:p-4 [&_pre]:rounded-lg [&_pre]:overflow-x-auto [&_pre]:my-4',
+          '[&_pre_code]:bg-transparent [&_pre_code]:p-0',
+          '[&_hr]:border-slate-200 [&_hr]:dark:border-slate-700 [&_hr]:my-8'
         ),
       },
     },
     immediatelyRender: false,
   })
+
+  // View mode toggle handler
+  const handleViewModeChange = useCallback((newMode: 'wysiwyg' | 'markdown') => {
+    if (newMode === 'markdown' && editor) {
+      setMarkdownContent(htmlToMarkdown(editor.getHTML()))
+    } else if (newMode === 'wysiwyg' && editor) {
+      editor.commands.setContent(markdownToHtml(markdownContent))
+    }
+    setViewMode(newMode)
+  }, [editor, markdownContent])
 
   // Auto-save functionality
   const handleSave = useCallback(async () => {
@@ -45,14 +77,17 @@ export function Editor({ onSave }: EditorProps) {
 
     setIsSaving(true)
     try {
-      const html = editor.getHTML()
+      // If in markdown mode, convert to HTML first
+      const html = viewMode === 'markdown'
+        ? markdownToHtml(markdownContent)
+        : editor.getHTML()
       await onSave(html)
     } catch (error) {
       console.error('Failed to save:', error)
     } finally {
       setIsSaving(false)
     }
-  }, [editor, onSave])
+  }, [editor, onSave, viewMode, markdownContent])
 
   // Auto-save every 30 seconds if content has changed
   useEffect(() => {
@@ -82,21 +117,53 @@ export function Editor({ onSave }: EditorProps) {
   if (!editor) {
     return (
       <div className="flex items-center justify-center h-96">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-indigo-600 border-t-transparent" />
+        <div className="h-6 w-6 animate-spin rounded-full border-2 border-indigo-500 border-t-transparent" />
       </div>
     )
   }
 
   return (
     <div className="relative">
-      <Toolbar editor={editor} isSaving={isSaving} onSave={handleSave} />
+      <Toolbar
+        editor={editor}
+        isSaving={isSaving}
+        onSave={handleSave}
+        viewMode={viewMode}
+        onViewModeChange={handleViewModeChange}
+        isCommentsSidebarOpen={isCommentsSidebarOpen}
+        onToggleCommentsSidebar={() => setIsCommentsSidebarOpen(!isCommentsSidebarOpen)}
+        commentCount={threads.length}
+      />
 
-      <div className="relative mt-4 rounded-lg border bg-white shadow-sm">
-        <EditorContent editor={editor} />
+      {viewMode === 'markdown' && others.length > 0 && (
+        <div className="mt-2 px-3 py-2 bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded-lg text-xs text-amber-700 dark:text-amber-300">
+          Changes won&apos;t sync until you switch back to Rich view
+        </div>
+      )}
 
-        <FloatingComposer editor={editor} style={{ width: 350 }} />
-        <FloatingThreads editor={editor} threads={threads} style={{ width: 350 }} />
-      </div>
+      {viewMode === 'wysiwyg' ? (
+        <div className="relative mt-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
+          <EditorContent editor={editor} />
+
+          <FloatingComposer editor={editor} style={{ width: 350 }} />
+          <FloatingThreads editor={editor} threads={threads} style={{ width: 350 }} />
+        </div>
+      ) : (
+        <textarea
+          value={markdownContent}
+          onChange={(e) => setMarkdownContent(e.target.value)}
+          className="w-full min-h-[500px] px-10 py-8 font-mono text-sm leading-relaxed
+                     bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200
+                     border border-slate-200 dark:border-slate-800 rounded-xl
+                     focus:outline-none resize-none mt-3"
+          spellCheck={false}
+        />
+      )}
+
+      <CommentsSidebar
+        isOpen={isCommentsSidebarOpen}
+        onClose={() => setIsCommentsSidebarOpen(false)}
+      />
     </div>
   )
 }

@@ -132,12 +132,12 @@ export function ShareModal({ documentId, isOpen, onClose }: ShareModalProps) {
         onClick={onClose}
       />
 
-      <div className="relative bg-white rounded-xl shadow-xl w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto">
-        <div className="sticky top-0 bg-white border-b px-6 py-4 flex items-center justify-between">
-          <h2 className="text-xl font-semibold text-gray-900">Share Document</h2>
+      <div className="relative bg-white dark:bg-slate-900 rounded-xl shadow-xl w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto">
+        <div className="sticky top-0 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-6 py-4 flex items-center justify-between">
+          <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100">Share Document</h2>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
+            className="text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300 transition-colors"
           >
             <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -148,20 +148,20 @@ export function ShareModal({ documentId, isOpen, onClose }: ShareModalProps) {
         <div className="p-6 space-y-6">
           {/* Share by email */}
           <div>
-            <h3 className="text-sm font-medium text-gray-700 mb-3">Invite by email</h3>
+            <h3 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-3">Invite by email</h3>
             <form onSubmit={handleShare} className="flex gap-2">
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="Enter email address"
-                className="flex-1 rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="flex-1 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 required
               />
               <select
                 value={permission}
                 onChange={(e) => setPermission(e.target.value as typeof permission)}
-                className="rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
               >
                 <option value="view">Can view</option>
                 <option value="comment">Can comment</option>
@@ -176,29 +176,29 @@ export function ShareModal({ documentId, isOpen, onClose }: ShareModalProps) {
               </button>
             </form>
             {error && (
-              <p className="mt-2 text-sm text-red-600">{error}</p>
+              <p className="mt-2 text-sm text-red-600 dark:text-red-400">{error}</p>
             )}
           </div>
 
           {/* Link sharing */}
           <div>
-            <h3 className="text-sm font-medium text-gray-700 mb-3">Share via link</h3>
+            <h3 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-3">Share via link</h3>
             {linkShare ? (
-              <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg">
+              <div className="flex items-center gap-2 p-3 bg-slate-50 dark:bg-slate-800 rounded-lg">
                 <input
                   type="text"
                   value={`${window.location.origin}/share/${linkShare.token}`}
                   readOnly
-                  className="flex-1 bg-transparent text-sm text-gray-600 truncate"
+                  className="flex-1 bg-transparent text-sm text-slate-600 dark:text-slate-400 truncate"
                 />
-                <span className="text-xs text-gray-500 capitalize">{linkShare.permission}</span>
+                <span className="text-xs text-slate-500 dark:text-slate-400 capitalize">{linkShare.permission}</span>
                 <button
                   onClick={copyLink}
                   className={cn(
                     'rounded-lg px-3 py-1.5 text-sm font-medium transition-colors',
                     copied
-                      ? 'bg-green-100 text-green-700'
-                      : 'bg-indigo-100 text-indigo-700 hover:bg-indigo-200'
+                      ? 'bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300'
+                      : 'bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-200 dark:hover:bg-indigo-800'
                   )}
                 >
                   {copied ? 'Copied!' : 'Copy'}
@@ -220,13 +220,13 @@ export function ShareModal({ documentId, isOpen, onClose }: ShareModalProps) {
 
           {/* Current shares */}
           <div>
-            <h3 className="text-sm font-medium text-gray-700 mb-3">People with access</h3>
+            <h3 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-3">People with access</h3>
             {loading ? (
               <div className="flex justify-center py-4">
                 <div className="h-6 w-6 animate-spin rounded-full border-2 border-indigo-600 border-t-transparent" />
               </div>
             ) : shares.length === 0 ? (
-              <p className="text-sm text-gray-500 text-center py-4">
+              <p className="text-sm text-slate-500 dark:text-slate-400 text-center py-4">
                 Only you have access to this document
               </p>
             ) : (
@@ -234,7 +234,7 @@ export function ShareModal({ documentId, isOpen, onClose }: ShareModalProps) {
                 {shares.map((share) => (
                   <div
                     key={share.id}
-                    className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                    className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800 rounded-lg"
                   >
                     <div className="flex items-center gap-3">
                       {share.profiles?.avatar_url ? (
@@ -245,22 +245,22 @@ export function ShareModal({ documentId, isOpen, onClose }: ShareModalProps) {
                           className="h-8 w-8 rounded-full"
                         />
                       ) : (
-                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-300 text-gray-600 text-sm font-medium">
+                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-300 dark:bg-slate-600 text-slate-600 dark:text-slate-300 text-sm font-medium">
                           {share.profiles?.display_name?.[0] || share.profiles?.email?.[0] || '?'}
                         </div>
                       )}
                       <div>
-                        <p className="text-sm font-medium text-gray-900">
+                        <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
                           {share.profiles?.display_name || 'Unknown'}
                         </p>
-                        <p className="text-xs text-gray-500">{share.profiles?.email}</p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400">{share.profiles?.email}</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="text-xs text-gray-500 capitalize">{share.permission}</span>
+                      <span className="text-xs text-slate-500 dark:text-slate-400 capitalize">{share.permission}</span>
                       <button
                         onClick={() => handleRemoveShare(share.id)}
-                        className="text-gray-400 hover:text-red-600 transition-colors"
+                        className="text-slate-400 hover:text-red-600 dark:text-slate-500 dark:hover:text-red-400 transition-colors"
                         title="Remove access"
                       >
                         <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -1,26 +1,77 @@
 @import "tailwindcss";
+@import "../styles/obsidian.css";
+@import "@liveblocks/react-ui/styles.css";
+@import "@liveblocks/react-ui/styles/dark/attributes.css";
+@import "@liveblocks/react-tiptap/styles.css";
 
 :root {
   --background: #ffffff;
-  --foreground: #171717;
+  --foreground: #1e293b;
+  --border: #e2e8f0;
+  --card-bg: #ffffff;
+  --muted: #f8fafc;
+  --accent: #6366f1;
+}
+
+.dark {
+  --background: #1a1a1a;
+  --foreground: #e2e8f0;
+  --border: #2e2e2e;
+  --card-bg: #1f1f1f;
+  --muted: #262626;
+  --accent: #818cf8;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-border: var(--border);
+  --color-card-bg: var(--card-bg);
+  --color-muted: var(--muted);
+  --color-accent: var(--accent);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+}
+
+/* Obsidian-inspired scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--obsidian-text-muted);
+}
+
+/* Selection styling */
+::selection {
+  background: var(--obsidian-accent-muted);
+  color: var(--foreground);
+}
+
+/* Liveblocks theme customization */
+.lb-root {
+  --lb-accent: var(--obsidian-accent);
+  --lb-dynamic-background: var(--obsidian-bg-primary);
+  --lb-dynamic-foreground: var(--obsidian-text-primary);
+  --lb-radius: 0.5rem;
+}
+
+.dark .lb-root {
+  --lb-dynamic-background: var(--obsidian-bg-primary);
+  --lb-dynamic-foreground: var(--obsidian-text-primary);
 }

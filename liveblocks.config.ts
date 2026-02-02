@@ -5,11 +5,16 @@ const client = createClient({
   authEndpoint: "/api/liveblocks-auth",
 });
 
+// User types for collaboration
+export type UserType = 'human' | 'ai-agent';
+
 // Presence - data that will be sent to other users when they enter the room
 export type Presence = {
   cursor: { x: number; y: number } | null;
   name: string;
   color: string;
+  isAI?: boolean;
+  aiStatus?: 'idle' | 'analyzing' | 'commenting' | 'reviewing';
 };
 
 // Storage - the data that is synchronized and persisted in the room
@@ -26,6 +31,10 @@ export type UserMeta = {
     email: string;
     avatar: string;
     color: string;
+    type: UserType;
+    agentId?: string;
+    agentModel?: string;
+    agentProvider?: string;
   };
 };
 
@@ -38,6 +47,12 @@ export type RoomEvent = {
 export type ThreadMetadata = {
   resolved: boolean;
   highlightId: string;
+  // AI-specific fields
+  aiGenerated?: boolean;
+  aiConfidence?: number;
+  aiReasoning?: string;
+  aiSuggestedAction?: 'accept' | 'reject' | 'review' | 'none';
+  aiCategory?: 'grammar' | 'style' | 'clarity' | 'factual' | 'suggestion' | 'question';
 };
 
 const roomContext = createRoomContext<Presence, Storage, UserMeta, RoomEvent, ThreadMetadata>(client);

@@ -106,11 +106,11 @@ export default function Dashboard() {
 
   if (loading || isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
         <Header />
         <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
           <div className="flex items-center justify-center py-20">
-            <div className="h-8 w-8 animate-spin rounded-full border-4 border-indigo-600 border-t-transparent" />
+            <div className="h-6 w-6 animate-spin rounded-full border-2 border-indigo-500 border-t-transparent" />
           </div>
         </main>
       </div>
@@ -119,11 +119,16 @@ export default function Dashboard() {
 
   if (!user) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-white">
-        <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
+      <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white dark:from-slate-950 dark:to-slate-900">
+        <div className="mx-auto max-w-5xl px-4 py-20 sm:px-6 lg:px-8">
           <div className="text-center">
-            <h1 className="text-5xl font-bold text-gray-900 mb-4">ColabMD</h1>
-            <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
+            <div className="flex justify-center mb-6">
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-indigo-600 text-white font-bold text-lg">
+                CM
+              </div>
+            </div>
+            <h1 className="text-4xl font-bold text-slate-900 dark:text-slate-100 mb-4 tracking-tight">ColabMD</h1>
+            <p className="text-lg text-slate-600 dark:text-slate-400 mb-10 max-w-xl mx-auto leading-relaxed">
               A collaborative markdown editor with real-time co-editing, inline comments, and seamless sharing.
             </p>
             <div className="flex justify-center">
@@ -131,35 +136,35 @@ export default function Dashboard() {
             </div>
           </div>
 
-          <div className="mt-20 grid gap-8 md:grid-cols-3">
-            <div className="rounded-2xl bg-white p-6 shadow-lg">
-              <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-indigo-100 text-indigo-600 mb-4">
-                <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="mt-16 grid gap-6 md:grid-cols-3">
+            <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 mb-4">
+                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                 </svg>
               </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Real-time Collaboration</h3>
-              <p className="text-gray-600">Edit documents together with live cursors and presence indicators.</p>
+              <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-200 mb-1.5">Real-time Collaboration</h3>
+              <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">Edit documents together with live cursors and presence indicators.</p>
             </div>
 
-            <div className="rounded-2xl bg-white p-6 shadow-lg">
-              <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-indigo-100 text-indigo-600 mb-4">
-                <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 mb-4">
+                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
                 </svg>
               </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Inline Comments</h3>
-              <p className="text-gray-600">Add comments to specific text selections and discuss changes inline.</p>
+              <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-200 mb-1.5">Inline Comments</h3>
+              <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">Add comments to specific text selections and discuss changes inline.</p>
             </div>
 
-            <div className="rounded-2xl bg-white p-6 shadow-lg">
-              <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-indigo-100 text-indigo-600 mb-4">
-                <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 mb-4">
+                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
                 </svg>
               </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Easy Sharing</h3>
-              <p className="text-gray-600">Share documents with view, comment, or edit permissions.</p>
+              <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-200 mb-1.5">Easy Sharing</h3>
+              <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">Share documents with view, comment, or edit permissions.</p>
             </div>
           </div>
         </div>
@@ -168,9 +173,9 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
       <Header />
-      <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+      <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
         <DocumentList
           owned={documents.owned}
           shared={documents.shared}

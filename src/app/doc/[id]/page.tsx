@@ -26,8 +26,8 @@ function EditorWrapper({ documentId, initialContent, onSave }: {
     <ClientSideSuspense fallback={
       <div className="flex items-center justify-center h-96">
         <div className="text-center">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-indigo-600 border-t-transparent mx-auto" />
-          <p className="mt-4 text-gray-500">Connecting to collaboration server...</p>
+          <div className="h-6 w-6 animate-spin rounded-full border-2 border-indigo-500 border-t-transparent mx-auto" />
+          <p className="mt-4 text-sm text-slate-500 dark:text-slate-400">Connecting to collaboration server...</p>
         </div>
       </div>
     }>
@@ -124,11 +124,11 @@ export default function DocumentPage() {
 
   if (authLoading || loading) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
         <Header showBackButton />
         <main className="mx-auto max-w-5xl px-4 py-8">
           <div className="flex items-center justify-center h-96">
-            <div className="h-8 w-8 animate-spin rounded-full border-4 border-indigo-600 border-t-transparent" />
+            <div className="h-6 w-6 animate-spin rounded-full border-2 border-indigo-500 border-t-transparent" />
           </div>
         </main>
       </div>
@@ -137,17 +137,17 @@ export default function DocumentPage() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
         <Header showBackButton />
         <main className="mx-auto max-w-5xl px-4 py-8">
           <div className="flex flex-col items-center justify-center h-96">
-            <svg className="h-16 w-16 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="h-12 w-12 text-slate-300 dark:text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
             </svg>
-            <h2 className="mt-4 text-xl font-semibold text-gray-900">{error}</h2>
+            <h2 className="mt-4 text-lg font-medium text-slate-800 dark:text-slate-200">{error}</h2>
             <button
               onClick={() => router.push('/')}
-              className="mt-4 rounded-lg bg-indigo-600 px-4 py-2 text-white hover:bg-indigo-700 transition-colors"
+              className="mt-4 rounded-lg bg-indigo-600 px-3.5 py-2 text-sm font-medium text-white hover:bg-indigo-500 transition-colors"
             >
               Go back to dashboard
             </button>
@@ -162,15 +162,15 @@ export default function DocumentPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="sticky top-0 z-40 border-b bg-white/80 backdrop-blur-sm">
-        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center gap-4">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
+      <header className="sticky top-0 z-40 border-b border-slate-200 dark:border-slate-800 bg-white/95 dark:bg-slate-900/95 backdrop-blur-sm">
+        <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center gap-3">
             <button
               onClick={() => router.push('/')}
-              className="flex items-center gap-1 text-gray-500 hover:text-gray-700 transition-colors"
+              className="flex items-center gap-1 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 transition-colors"
             >
-              <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
               </svg>
             </button>
@@ -188,13 +188,13 @@ export default function DocumentPage() {
                     setIsEditingTitle(false)
                   }
                 }}
-                className="text-lg font-medium text-gray-900 border-b-2 border-indigo-500 bg-transparent focus:outline-none"
+                className="text-sm font-medium text-slate-800 dark:text-slate-200 border-b-2 border-indigo-500 bg-transparent focus:outline-none"
                 autoFocus
               />
             ) : (
               <button
                 onClick={() => setIsEditingTitle(true)}
-                className="text-lg font-medium text-gray-900 hover:text-indigo-600 transition-colors"
+                className="text-sm font-medium text-slate-800 dark:text-slate-200 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
                 title="Click to edit title"
               >
                 {document.title}
@@ -202,7 +202,7 @@ export default function DocumentPage() {
             )}
           </div>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
             <RoomProvider
               id={`doc:${documentId}`}
               initialPresence={{
@@ -217,9 +217,9 @@ export default function DocumentPage() {
             {document.owner_id === user?.id && (
               <button
                 onClick={() => setIsShareModalOpen(true)}
-                className="flex items-center gap-2 rounded-lg bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-700 transition-colors"
+                className="flex items-center gap-1.5 rounded-md bg-indigo-600 px-2.5 py-1.5 text-xs font-medium text-white hover:bg-indigo-500 transition-colors"
               >
-                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
                 </svg>
                 Share
@@ -235,7 +235,7 @@ export default function DocumentPage() {
         onClose={() => setIsShareModalOpen(false)}
       />
 
-      <main className="mx-auto max-w-5xl px-4 py-8">
+      <main className="mx-auto max-w-5xl px-4 py-6">
         <RoomProvider
           id={`doc:${documentId}`}
           initialPresence={{
