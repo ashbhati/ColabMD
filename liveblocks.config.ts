@@ -3,6 +3,24 @@ import { createRoomContext, createLiveblocksContext } from "@liveblocks/react";
 
 const client = createClient({
   authEndpoint: "/api/liveblocks-auth",
+  resolveUsers: async ({ userIds }) => {
+    try {
+      const response = await fetch(`/api/users?userIds=${userIds.join(",")}`);
+      if (!response.ok) {
+        console.error("Failed to resolve users:", response.statusText);
+        return [];
+      }
+      const users = await response.json();
+      return users;
+    } catch (error) {
+      console.error("Error resolving users:", error);
+      return [];
+    }
+  },
+  resolveMentionSuggestions: async ({ text }) => {
+    // For now, return empty - can be enhanced later to suggest users for @mentions
+    return [];
+  },
 });
 
 // User types for collaboration

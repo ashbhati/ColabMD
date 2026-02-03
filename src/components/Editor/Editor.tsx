@@ -6,13 +6,15 @@ import Placeholder from '@tiptap/extension-placeholder'
 import { useLiveblocksExtension, FloatingComposer, FloatingThreads } from '@liveblocks/react-tiptap'
 import { useThreads, useOthers } from '../../../liveblocks.config'
 import { Toolbar } from './Toolbar'
-import { CommentsSidebar } from '@/components/Comments'
+import { CommentsSidebar, CustomThread } from '@/components/Comments'
 import { useCallback, useEffect, useState } from 'react'
 import { cn } from '@/lib/utils'
 import { htmlToMarkdown, markdownToHtml } from '@/lib/markdown'
 
 interface EditorProps {
-  documentId: string
+  /** @deprecated Document ID is managed by Liveblocks room context */
+  documentId?: string
+  /** @deprecated Initial content is synced via Liveblocks */
   initialContent?: string
   onSave?: (content: string) => void
 }
@@ -25,6 +27,7 @@ export function Editor({ onSave }: EditorProps) {
   const [viewMode, setViewMode] = useState<'wysiwyg' | 'markdown'>('wysiwyg')
   const [markdownContent, setMarkdownContent] = useState('')
   const [isCommentsSidebarOpen, setIsCommentsSidebarOpen] = useState(false)
+  const [notification, setNotification] = useState<string | null>(null)
 
   const editor = useEditor({
     extensions: [
@@ -114,6 +117,52 @@ export function Editor({ onSave }: EditorProps) {
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [handleSave])
 
+  // Open sidebar when clicking on comment marks
+  useEffect(() => {
+    if (!editor) return
+
+    const handleEditorClick = (event: MouseEvent) => {
+      const target = event.target as HTMLElement
+
+      // Check if clicked on a thread mark
+      if (target.closest('.lb-tiptap-thread-mark')) {
+        setIsCommentsSidebarOpen(true)
+      }
+    }
+
+    const editorElement = editor.view.dom
+    editorElement.addEventListener('click', handleEditorClick)
+
+    return () => {
+      editorElement.removeEventListener('click', handleEditorClick)
+    }
+  }, [editor])
+
+  // Handle add comment button click
+  const handleAddComment = useCallback(() => {
+    if (!editor) return
+
+    const { from, to } = editor.state.selection
+    if (from === to) {
+      // No selection - show non-blocking notification
+      setNotification('Select text in the document to add a comment')
+      setTimeout(() => setNotification(null), 3000)
+      return
+    }
+
+    // Trigger Liveblocks comment composer
+    try {
+      const result = editor.commands.addPendingComment()
+      if (!result) {
+        console.warn('addPendingComment command returned false')
+      }
+    } catch (error) {
+      console.error('Failed to add pending comment:', error)
+      setNotification('Failed to add comment. Please try again.')
+      setTimeout(() => setNotification(null), 3000)
+    }
+  }, [editor])
+
   if (!editor) {
     return (
       <div className="flex items-center justify-center h-96">
@@ -146,7 +195,7 @@ export function Editor({ onSave }: EditorProps) {
           <EditorContent editor={editor} />
 
           <FloatingComposer editor={editor} style={{ width: 350 }} />
-          <FloatingThreads editor={editor} threads={threads} style={{ width: 350 }} />
+          <FloatingThreads editor={editor} threads={threads} style={{ width: 350 }} components={{ Thread: CustomThread }} />
         </div>
       ) : (
         <textarea
@@ -163,7 +212,18 @@ export function Editor({ onSave }: EditorProps) {
       <CommentsSidebar
         isOpen={isCommentsSidebarOpen}
         onClose={() => setIsCommentsSidebarOpen(false)}
+        onAddComment={handleAddComment}
       />
+
+      {/* Non-blocking notification */}
+      {notification && (
+        <div
+          role="alert"
+          className="fixed bottom-4 left-1/2 -translate-x-1/2 px-4 py-2 bg-slate-800 dark:bg-slate-200 text-white dark:text-slate-900 text-sm rounded-lg shadow-lg z-50 animate-in fade-in slide-in-from-bottom-2 duration-200"
+        >
+          {notification}
+        </div>
+      )}
     </div>
   )
 }

@@ -82,8 +82,45 @@ export async function POST(request: Request) {
     }
 
     // Get user profile for display name and avatar
-    const displayName = user.user_metadata?.full_name || user.email?.split("@")[0] || "Anonymous";
-    const avatar = user.user_metadata?.avatar_url || "";
+    let displayName = user.user_metadata?.full_name;
+    let avatar = user.user_metadata?.avatar_url || "";
+
+    // Debug logging - remove after fixing
+    console.log("[liveblocks-auth] User metadata:", {
+      full_name: user.user_metadata?.full_name,
+      email: user.email,
+      avatar_url: user.user_metadata?.avatar_url,
+    });
+
+    // If no name in metadata (or empty string), check profiles table
+    if (!displayName || displayName.trim() === "") {
+      const { data: profile, error: profileError } = await supabase
+        .from("profiles")
+        .select("display_name, avatar_url")
+        .eq("id", user.id)
+        .single();
+
+      // Debug logging - remove after fixing
+      console.log("[liveblocks-auth] Profile lookup:", {
+        profile,
+        error: profileError?.message,
+      });
+
+      // Log unexpected errors (PGRST116 is "not found" which is expected)
+      if (profileError && profileError.code !== "PGRST116") {
+        console.warn("Failed to fetch user profile:", profileError.message);
+      }
+
+      if (profile) {
+        displayName = profile.display_name || user.email?.split("@")[0] || "Anonymous";
+        avatar = avatar || profile.avatar_url || "";
+      } else {
+        displayName = user.email?.split("@")[0] || "Anonymous";
+      }
+    }
+
+    // Debug logging - remove after fixing
+    console.log("[liveblocks-auth] Final displayName:", displayName);
 
     // Create a session for the user
     const session = liveblocks.prepareSession(user.id, {
@@ -92,6 +129,7 @@ export async function POST(request: Request) {
         email: user.email || "",
         avatar: avatar,
         color: getUserColor(user.id),
+        type: "human" as const,
       },
     });
 

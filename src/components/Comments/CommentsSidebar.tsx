@@ -1,5 +1,6 @@
 'use client'
 
+import { useMemo } from 'react'
 import { useThreads, ThreadMetadata } from '../../../liveblocks.config'
 import { Thread } from '@liveblocks/react-ui'
 import { cn } from '@/lib/utils'
@@ -8,6 +9,7 @@ import { AICommentBadge } from './AICommentBadge'
 interface CommentsSidebarProps {
   isOpen: boolean
   onClose: () => void
+  onAddComment?: () => void
 }
 
 // Type guard for AI thread metadata
@@ -15,14 +17,19 @@ function isAIThread(metadata: ThreadMetadata | undefined): boolean {
   return metadata?.aiGenerated === true
 }
 
-export function CommentsSidebar({ isOpen, onClose }: CommentsSidebarProps) {
+export function CommentsSidebar({ isOpen, onClose, onAddComment }: CommentsSidebarProps) {
   const { threads } = useThreads()
 
-  const resolvedThreads = threads.filter((thread) => thread.metadata?.resolved)
-  const unresolvedThreads = threads.filter((thread) => !thread.metadata?.resolved)
+  const { resolvedThreads, unresolvedThreads } = useMemo(() => ({
+    resolvedThreads: threads.filter((thread) => thread.metadata?.resolved),
+    unresolvedThreads: threads.filter((thread) => !thread.metadata?.resolved),
+  }), [threads])
 
   return (
-    <div
+    <aside
+      role="complementary"
+      aria-label="Comments sidebar"
+      aria-hidden={!isOpen}
       className={cn(
         'fixed right-0 top-16 h-[calc(100vh-4rem)] w-80 bg-white dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800 shadow-lg transition-transform duration-300 z-40 overflow-y-auto',
         isOpen ? 'translate-x-0' : 'translate-x-full'
@@ -30,14 +37,29 @@ export function CommentsSidebar({ isOpen, onClose }: CommentsSidebarProps) {
     >
       <div className="sticky top-0 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 p-4 flex items-center justify-between">
         <h2 className="font-semibold text-slate-900 dark:text-slate-100">Comments</h2>
-        <button
-          onClick={onClose}
-          className="text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300 transition-colors"
-        >
-          <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </button>
+        <div className="flex items-center gap-2">
+          {onAddComment && (
+            <button
+              onClick={onAddComment}
+              aria-label="Add comment to selected text"
+              className="flex items-center gap-1.5 rounded-md bg-indigo-50 px-2.5 py-1.5 text-xs font-medium text-indigo-600 hover:bg-indigo-100 dark:bg-indigo-950 dark:text-indigo-400 dark:hover:bg-indigo-900 transition-colors"
+            >
+              <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+              Add
+            </button>
+          )}
+          <button
+            onClick={onClose}
+            aria-label="Close comments sidebar"
+            className="text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300 transition-colors"
+          >
+            <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
       </div>
 
       <div className="p-4 space-y-4">
@@ -77,7 +99,7 @@ export function CommentsSidebar({ isOpen, onClose }: CommentsSidebarProps) {
                             reasoning={thread.metadata.aiReasoning}
                           />
                         )}
-                        <Thread thread={thread} />
+                        <Thread thread={thread} showActions={true} showComposer="collapsed" showResolveAction showReactions />
                       </div>
                     )
                   })}
@@ -109,7 +131,7 @@ export function CommentsSidebar({ isOpen, onClose }: CommentsSidebarProps) {
                             reasoning={thread.metadata.aiReasoning}
                           />
                         )}
-                        <Thread thread={thread} />
+                        <Thread thread={thread} showActions={true} showComposer="collapsed" showResolveAction showReactions />
                       </div>
                     )
                   })}
@@ -119,6 +141,6 @@ export function CommentsSidebar({ isOpen, onClose }: CommentsSidebarProps) {
           </>
         )}
       </div>
-    </div>
+    </aside>
   )
 }

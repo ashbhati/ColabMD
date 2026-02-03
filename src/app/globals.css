@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
 @import "../styles/obsidian.css";
 @import "@liveblocks/react-ui/styles.css";
 @import "@liveblocks/react-ui/styles/dark/attributes.css";
@@ -74,4 +75,60 @@ body {
 .dark .lb-root {
   --lb-dynamic-background: var(--obsidian-bg-primary);
   --lb-dynamic-foreground: var(--obsidian-text-primary);
+}
+
+/* Enhanced comment highlighting in editor - uses --accent CSS variable */
+.lb-tiptap-thread-mark:not([data-orphan="true"]):not([data-hidden]) {
+  background-color: color-mix(in srgb, var(--accent) 15%, transparent);
+  border-bottom: 2px solid color-mix(in srgb, var(--accent) 40%, transparent);
+  padding-bottom: 1px;
+  cursor: pointer;
+  transition: background-color 150ms ease;
+}
+
+.lb-tiptap-thread-mark:not([data-orphan="true"]):not([data-hidden]):hover {
+  background-color: color-mix(in srgb, var(--accent) 25%, transparent);
+}
+
+/* Keyboard accessibility for comment marks */
+.lb-tiptap-thread-mark:not([data-orphan="true"]):not([data-hidden]):focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+/* Tooltip for resolve button */
+.lb-thread-resolve-button {
+  position: relative;
+}
+
+.lb-thread-resolve-button::after {
+  content: "Mark as resolved";
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 4px 8px;
+  background: var(--foreground);
+  color: var(--background);
+  font-size: 12px;
+  border-radius: 4px;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 150ms;
+  margin-bottom: 4px;
+  z-index: 10;
+}
+
+/* Show tooltip on hover and focus (keyboard accessibility) */
+.lb-thread-resolve-button:hover::after,
+.lb-thread-resolve-button:focus::after,
+.lb-thread-resolve-button:focus-visible::after {
+  opacity: 1;
+}
+
+/* Different tooltip text for resolved threads */
+.lb-thread[data-resolved="true"] .lb-thread-resolve-button::after,
+.lb-thread.lb-thread-resolved .lb-thread-resolve-button::after {
+  content: "Reopen thread";
 }
