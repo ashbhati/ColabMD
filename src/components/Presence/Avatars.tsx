@@ -8,8 +8,11 @@ export function Avatars() {
   const others = useOthers()
   const self = useSelf()
 
-  const hasMoreUsers = others.length > MAX_OTHERS
-  const visibleOthers = others.slice(0, MAX_OTHERS)
+  // Deduplicate the current user in case Liveblocks reports the same user twice (e.g., due to multiple sessions)
+  const filteredOthers = others.filter((other) => other.id !== self?.id)
+
+  const hasMoreUsers = filteredOthers.length > MAX_OTHERS
+  const visibleOthers = filteredOthers.slice(0, MAX_OTHERS)
 
   return (
     <div className="flex items-center -space-x-2">

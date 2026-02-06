@@ -1,10 +1,12 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
+import { usePathname } from 'next/navigation'
 import { useAuth } from './AuthProvider'
 
 export function UserMenu() {
   const { user, signOut } = useAuth()
+  const pathname = usePathname()
   const [isOpen, setIsOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
 
@@ -20,6 +22,11 @@ export function UserMenu() {
   }, [])
 
   if (!user) return null
+
+  // Hide the profile button while editing a document to avoid duplicating presence avatars
+  if (pathname?.startsWith('/doc/')) {
+    return null
+  }
 
   const avatarUrl = user.user_metadata?.avatar_url
   const displayName = user.user_metadata?.full_name || user.email?.split('@')[0]

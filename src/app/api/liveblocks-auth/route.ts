@@ -85,13 +85,6 @@ export async function POST(request: Request) {
     let displayName = user.user_metadata?.full_name;
     let avatar = user.user_metadata?.avatar_url || "";
 
-    // Debug logging - remove after fixing
-    console.log("[liveblocks-auth] User metadata:", {
-      full_name: user.user_metadata?.full_name,
-      email: user.email,
-      avatar_url: user.user_metadata?.avatar_url,
-    });
-
     // If no name in metadata (or empty string), check profiles table
     if (!displayName || displayName.trim() === "") {
       const { data: profile, error: profileError } = await supabase
@@ -99,12 +92,6 @@ export async function POST(request: Request) {
         .select("display_name, avatar_url")
         .eq("id", user.id)
         .single();
-
-      // Debug logging - remove after fixing
-      console.log("[liveblocks-auth] Profile lookup:", {
-        profile,
-        error: profileError?.message,
-      });
 
       // Log unexpected errors (PGRST116 is "not found" which is expected)
       if (profileError && profileError.code !== "PGRST116") {
@@ -118,9 +105,6 @@ export async function POST(request: Request) {
         displayName = user.email?.split("@")[0] || "Anonymous";
       }
     }
-
-    // Debug logging - remove after fixing
-    console.log("[liveblocks-auth] Final displayName:", displayName);
 
     // Create a session for the user
     const session = liveblocks.prepareSession(user.id, {

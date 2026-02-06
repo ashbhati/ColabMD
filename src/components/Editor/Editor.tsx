@@ -7,19 +7,19 @@ import { useLiveblocksExtension, FloatingComposer, FloatingThreads } from '@live
 import { useThreads, useOthers } from '../../../liveblocks.config'
 import { Toolbar } from './Toolbar'
 import { CommentsSidebar, CustomThread } from '@/components/Comments'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { cn } from '@/lib/utils'
 import { htmlToMarkdown, markdownToHtml } from '@/lib/markdown'
 
 interface EditorProps {
   /** @deprecated Document ID is managed by Liveblocks room context */
   documentId?: string
-  /** @deprecated Initial content is synced via Liveblocks */
+  /** Initial HTML content hydrated from Supabase */
   initialContent?: string
   onSave?: (content: string) => void
 }
 
-export function Editor({ onSave }: EditorProps) {
+export function Editor({ initialContent = '', onSave }: EditorProps) {
   const liveblocks = useLiveblocksExtension()
   const { threads } = useThreads()
   const others = useOthers()
@@ -28,6 +28,7 @@ export function Editor({ onSave }: EditorProps) {
   const [markdownContent, setMarkdownContent] = useState('')
   const [isCommentsSidebarOpen, setIsCommentsSidebarOpen] = useState(false)
   const [notification, setNotification] = useState<string | null>(null)
+  const hasHydratedInitialContent = useRef(false)
 
   const editor = useEditor({
     extensions: [
@@ -39,6 +40,7 @@ export function Editor({ onSave }: EditorProps) {
       }),
       liveblocks,
     ],
+    content: initialContent || '',
     editorProps: {
       attributes: {
         class: cn(
@@ -63,6 +65,17 @@ export function Editor({ onSave }: EditorProps) {
     },
     immediatelyRender: false,
   })
+
+  // Ensure the Supabase-backed HTML hydrates the editor/Yjs doc exactly once
+  useEffect(() => {
+    if (!editor || hasHydratedInitialContent.current) return
+
+    if (initialContent && editor.isEmpty) {
+      editor.commands.setContent(initialContent)
+    }
+
+    hasHydratedInitialContent.current = true
+  }, [editor, initialContent])
 
   // View mode toggle handler
   const handleViewModeChange = useCallback((newMode: 'wysiwyg' | 'markdown') => {

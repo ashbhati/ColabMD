@@ -17,37 +17,6 @@ interface Document {
   owner_id: string
 }
 
-function EditorWrapper({ documentId, initialContent, onSave }: {
-  documentId: string
-  initialContent?: string
-  onSave: (content: string) => Promise<void>
-}) {
-  return (
-    <ClientSideSuspense fallback={
-      <div className="flex items-center justify-center h-96">
-        <div className="text-center">
-          <div className="h-6 w-6 animate-spin rounded-full border-2 border-indigo-500 border-t-transparent mx-auto" />
-          <p className="mt-4 text-sm text-slate-500 dark:text-slate-400">Connecting to collaboration server...</p>
-        </div>
-      </div>
-    }>
-      <Editor
-        documentId={documentId}
-        initialContent={initialContent || ''}
-        onSave={onSave}
-      />
-    </ClientSideSuspense>
-  )
-}
-
-function PresenceWrapper() {
-  return (
-    <ClientSideSuspense fallback={null}>
-      <Avatars />
-    </ClientSideSuspense>
-  )
-}
-
 export default function DocumentPage() {
   const params = useParams()
   const router = useRouter()
@@ -162,95 +131,97 @@ export default function DocumentPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
-      <header className="sticky top-0 z-40 border-b border-slate-200 dark:border-slate-800 bg-white/95 dark:bg-slate-900/95 backdrop-blur-sm">
-        <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => router.push('/')}
-              className="flex items-center gap-1 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 transition-colors"
-            >
-              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
-            </button>
-
-            {isEditingTitle ? (
-              <input
-                type="text"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                onBlur={handleSaveTitle}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') handleSaveTitle()
-                  if (e.key === 'Escape') {
-                    setTitle(document.title)
-                    setIsEditingTitle(false)
-                  }
-                }}
-                className="text-sm font-medium text-slate-800 dark:text-slate-200 border-b-2 border-indigo-500 bg-transparent focus:outline-none"
-                autoFocus
-              />
-            ) : (
+    <RoomProvider
+      id={`doc:${documentId}`}
+      initialPresence={{
+        cursor: null,
+        name: user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Anonymous',
+        color: '#6366f1',
+      }}
+    >
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
+        <header className="sticky top-0 z-40 border-b border-slate-200 dark:border-slate-800 bg-white/95 dark:bg-slate-900/95 backdrop-blur-sm">
+          <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+            <div className="flex items-center gap-3">
               <button
-                onClick={() => setIsEditingTitle(true)}
-                className="text-sm font-medium text-slate-800 dark:text-slate-200 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
-                title="Click to edit title"
+                onClick={() => router.push('/')}
+                className="flex items-center gap-1 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 transition-colors"
               >
-                {document.title}
-              </button>
-            )}
-          </div>
-
-          <div className="flex items-center gap-3">
-            <RoomProvider
-              id={`doc:${documentId}`}
-              initialPresence={{
-                cursor: null,
-                name: user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Anonymous',
-                color: '#6366f1',
-              }}
-            >
-              <PresenceWrapper />
-            </RoomProvider>
-
-            {document.owner_id === user?.id && (
-              <button
-                onClick={() => setIsShareModalOpen(true)}
-                className="flex items-center gap-1.5 rounded-md bg-indigo-600 px-2.5 py-1.5 text-xs font-medium text-white hover:bg-indigo-500 transition-colors"
-              >
-                <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                 </svg>
-                Share
               </button>
-            )}
+
+              {isEditingTitle ? (
+                <input
+                  type="text"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  onBlur={handleSaveTitle}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') handleSaveTitle()
+                    if (e.key === 'Escape') {
+                      setTitle(document.title)
+                      setIsEditingTitle(false)
+                    }
+                  }}
+                  className="text-sm font-medium text-slate-800 dark:text-slate-200 border-b-2 border-indigo-500 bg-transparent focus:outline-none"
+                  autoFocus
+                />
+              ) : (
+                <button
+                  onClick={() => setIsEditingTitle(true)}
+                  className="text-sm font-medium text-slate-800 dark:text-slate-200 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+                  title="Click to edit title"
+                >
+                  {document.title}
+                </button>
+              )}
+            </div>
+
+            <div className="flex items-center gap-3">
+              <ClientSideSuspense fallback={null}>
+                <Avatars />
+              </ClientSideSuspense>
+
+              {document.owner_id === user?.id && (
+                <button
+                  onClick={() => setIsShareModalOpen(true)}
+                  className="flex items-center gap-1.5 rounded-md bg-indigo-600 px-2.5 py-1.5 text-xs font-medium text-white hover:bg-indigo-500 transition-colors"
+                >
+                  <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+                  </svg>
+                  Share
+                </button>
+              )}
+            </div>
           </div>
-        </div>
-      </header>
+        </header>
 
-      <ShareModal
-        documentId={documentId}
-        isOpen={isShareModalOpen}
-        onClose={() => setIsShareModalOpen(false)}
-      />
+        <ShareModal
+          documentId={documentId}
+          isOpen={isShareModalOpen}
+          onClose={() => setIsShareModalOpen(false)}
+        />
 
-      <main className="mx-auto max-w-5xl px-4 py-6">
-        <RoomProvider
-          id={`doc:${documentId}`}
-          initialPresence={{
-            cursor: null,
-            name: user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Anonymous',
-            color: '#6366f1',
-          }}
-        >
-          <EditorWrapper
-            documentId={documentId}
-            initialContent={document.content || ''}
-            onSave={handleSaveContent}
-          />
-        </RoomProvider>
-      </main>
-    </div>
+        <main className="mx-auto max-w-5xl px-4 py-6">
+          <ClientSideSuspense fallback={
+            <div className="flex items-center justify-center h-96">
+              <div className="text-center">
+                <div className="h-6 w-6 animate-spin rounded-full border-2 border-indigo-500 border-t-transparent mx-auto" />
+                <p className="mt-4 text-sm text-slate-500 dark:text-slate-400">Connecting to collaboration server...</p>
+              </div>
+            </div>
+          }>
+            <Editor
+              documentId={documentId}
+              initialContent={document.content || ''}
+              onSave={handleSaveContent}
+            />
+          </ClientSideSuspense>
+        </main>
+      </div>
+    </RoomProvider>
   )
 }

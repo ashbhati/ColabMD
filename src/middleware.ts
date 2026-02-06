@@ -43,15 +43,16 @@ export async function middleware(request: NextRequest) {
   if (isProtectedPath && !user) {
     const url = request.nextUrl.clone()
     url.pathname = '/login'
-    url.searchParams.set('next', request.nextUrl.pathname)
+    const nextDestination = `${request.nextUrl.pathname}${request.nextUrl.search}${request.nextUrl.hash}`
+    url.searchParams.set('next', nextDestination)
     return NextResponse.redirect(url)
   }
 
   // Redirect logged-in users away from login page
   if (request.nextUrl.pathname === '/login' && user) {
-    const url = request.nextUrl.clone()
-    url.pathname = '/'
-    return NextResponse.redirect(url)
+    const nextParam = request.nextUrl.searchParams.get('next')
+    const destination = nextParam && nextParam.startsWith('/') ? nextParam : '/'
+    return NextResponse.redirect(new URL(destination, request.nextUrl.origin))
   }
 
   return supabaseResponse
