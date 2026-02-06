@@ -12,28 +12,41 @@ interface ThemeContextType {
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined)
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setTheme] = useState<Theme>('system')
-  const [resolvedTheme, setResolvedTheme] = useState<'light' | 'dark'>('light')
+  const [theme, setTheme] = useState<Theme>(() => {
+    if (typeof window === 'undefined') return 'system'
+    const stored = localStorage.getItem('theme')
+    if (stored === 'light' || stored === 'dark' || stored === 'system') return stored
+    return 'system'
+  })
+
+  const [systemTheme, setSystemTheme] = useState<'light' | 'dark'>(() => {
+    if (typeof window === 'undefined') return 'light'
+    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+  })
+
+  const resolvedTheme = theme === 'system' ? systemTheme : theme
 
   useEffect(() => {
-    const stored = localStorage.getItem('theme') as Theme
-    if (stored) setTheme(stored)
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
+    const handleChange = (event: MediaQueryListEvent) => {
+      setSystemTheme(event.matches ? 'dark' : 'light')
+    }
+
+    if (typeof mediaQuery.addEventListener === 'function') {
+      mediaQuery.addEventListener('change', handleChange)
+      return () => mediaQuery.removeEventListener('change', handleChange)
+    }
+
+    mediaQuery.addListener(handleChange)
+    return () => mediaQuery.removeListener(handleChange)
   }, [])
 
   useEffect(() => {
     localStorage.setItem('theme', theme)
 
-    if (theme === 'system') {
-      const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
-      setResolvedTheme(systemTheme)
-      document.documentElement.classList.toggle('dark', systemTheme === 'dark')
-      document.documentElement.setAttribute('data-theme', systemTheme)
-    } else {
-      setResolvedTheme(theme)
-      document.documentElement.classList.toggle('dark', theme === 'dark')
-      document.documentElement.setAttribute('data-theme', theme)
-    }
-  }, [theme])
+    document.documentElement.classList.toggle('dark', resolvedTheme === 'dark')
+    document.documentElement.setAttribute('data-theme', resolvedTheme)
+  }, [theme, resolvedTheme])
 
   return (
     <ThemeContext.Provider value={{ theme, setTheme, resolvedTheme }}>
