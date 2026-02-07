@@ -7,7 +7,7 @@ import { useLiveblocksExtension, FloatingComposer, FloatingThreads } from '@live
 import { useThreads, useOthers } from '../../../liveblocks.config'
 import { Toolbar } from './Toolbar'
 import { CommentsSidebar, CustomThread } from '@/components/Comments'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { ChangeEvent, useCallback, useEffect, useRef, useState } from 'react'
 import { cn } from '@/lib/utils'
 import { htmlToMarkdown, markdownToHtml } from '@/lib/markdown'
 
@@ -24,10 +24,13 @@ export function Editor({ initialContent = '', onSave }: EditorProps) {
   const { threads } = useThreads()
   const others = useOthers()
   const [isSaving, setIsSaving] = useState(false)
+  const [isUploading, setIsUploading] = useState(false)
   const [viewMode, setViewMode] = useState<'wysiwyg' | 'markdown'>('wysiwyg')
   const [markdownContent, setMarkdownContent] = useState('')
   const [isCommentsSidebarOpen, setIsCommentsSidebarOpen] = useState(false)
   const [notification, setNotification] = useState<string | null>(null)
+  const markdownTextareaRef = useRef<HTMLTextAreaElement | null>(null)
+  const uploadInputRef = useRef<HTMLInputElement | null>(null)
   const hasHydratedInitialContent = useRef(false)
 
   const editor = useEditor({
@@ -82,10 +85,41 @@ export function Editor({ initialContent = '', onSave }: EditorProps) {
     if (newMode === 'markdown' && editor) {
       setMarkdownContent(htmlToMarkdown(editor.getHTML()))
     } else if (newMode === 'wysiwyg' && editor) {
-      editor.commands.setContent(markdownToHtml(markdownContent))
+      const currentMarkdown = markdownTextareaRef.current?.value ?? markdownContent
+      editor.commands.setContent(markdownToHtml(currentMarkdown))
     }
     setViewMode(newMode)
   }, [editor, markdownContent])
+
+  const handleUploadMarkdown = useCallback(() => {
+    uploadInputRef.current?.click()
+  }, [])
+
+  const handleUploadInputChange = useCallback(async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    setIsUploading(true)
+
+    try {
+      const markdownText = await file.text()
+
+      if (viewMode === 'markdown') {
+        setMarkdownContent(markdownText)
+      } else if (editor) {
+        editor.commands.setContent(markdownToHtml(markdownText))
+      }
+
+      setNotification(`Loaded "${file.name}"`)
+      setTimeout(() => setNotification(null), 3000)
+    } catch {
+      setNotification('Failed to load markdown file')
+      setTimeout(() => setNotification(null), 3000)
+    } finally {
+      event.target.value = ''
+      setIsUploading(false)
+    }
+  }, [editor, viewMode])
 
   // Auto-save functionality
   const handleSave = useCallback(async () => {
@@ -186,10 +220,20 @@ export function Editor({ initialContent = '', onSave }: EditorProps) {
 
   return (
     <div className="relative">
+      <input
+        ref={uploadInputRef}
+        type="file"
+        accept=".md,.markdown,text/markdown,text/plain"
+        className="hidden"
+        onChange={handleUploadInputChange}
+      />
+
       <Toolbar
         editor={editor}
         isSaving={isSaving}
+        isUploading={isUploading}
         onSave={handleSave}
+        onUploadMarkdown={handleUploadMarkdown}
         viewMode={viewMode}
         onViewModeChange={handleViewModeChange}
         isCommentsSidebarOpen={isCommentsSidebarOpen}
@@ -203,24 +247,30 @@ export function Editor({ initialContent = '', onSave }: EditorProps) {
         </div>
       )}
 
-      {viewMode === 'wysiwyg' ? (
-        <div className="relative mt-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
-          <EditorContent editor={editor} />
+      <div className={cn(
+        'transition-[padding-right] duration-300 ease-in-out',
+        isCommentsSidebarOpen ? 'pr-80' : 'pr-0'
+      )}>
+        {viewMode === 'wysiwyg' ? (
+          <div className="relative mt-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
+            <EditorContent editor={editor} />
 
-          <FloatingComposer editor={editor} style={{ width: 350 }} />
-          <FloatingThreads editor={editor} threads={threads} style={{ width: 350 }} components={{ Thread: CustomThread }} />
-        </div>
-      ) : (
-        <textarea
-          value={markdownContent}
-          onChange={(e) => setMarkdownContent(e.target.value)}
-          className="w-full min-h-[500px] px-10 py-8 font-mono text-sm leading-relaxed
+            <FloatingComposer editor={editor} style={{ width: 350 }} />
+            <FloatingThreads editor={editor} threads={threads} style={{ width: 350 }} components={{ Thread: CustomThread }} />
+          </div>
+        ) : (
+          <textarea
+            ref={markdownTextareaRef}
+            value={markdownContent}
+            onChange={(e) => setMarkdownContent(e.target.value)}
+            className="w-full min-h-[500px] px-10 py-8 font-mono text-sm leading-relaxed
                      bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200
                      border border-slate-200 dark:border-slate-800 rounded-xl
                      focus:outline-none resize-none mt-3"
-          spellCheck={false}
-        />
-      )}
+            spellCheck={false}
+          />
+        )}
+      </div>
 
       <CommentsSidebar
         isOpen={isCommentsSidebarOpen}

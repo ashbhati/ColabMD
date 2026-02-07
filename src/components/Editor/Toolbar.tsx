@@ -7,7 +7,9 @@ import { Tooltip } from '@/components/ui/Tooltip'
 interface ToolbarProps {
   editor: Editor
   isSaving?: boolean
+  isUploading?: boolean
   onSave?: () => void
+  onUploadMarkdown?: () => void
   viewMode: 'wysiwyg' | 'markdown'
   onViewModeChange: (mode: 'wysiwyg' | 'markdown') => void
   isCommentsSidebarOpen?: boolean
@@ -57,7 +59,9 @@ function Divider() {
 export function Toolbar({
   editor,
   isSaving,
+  isUploading,
   onSave,
+  onUploadMarkdown,
   viewMode,
   onViewModeChange,
   isCommentsSidebarOpen,
@@ -290,6 +294,40 @@ export function Toolbar({
 
       <Divider />
 
+      {onUploadMarkdown && (
+        <Tooltip content={isUploading ? 'Uploading...' : 'Upload markdown file'}>
+          <button
+            onClick={onUploadMarkdown}
+            disabled={isUploading}
+            className={cn(
+              'flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium transition-all duration-150',
+              isUploading
+                ? 'bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-500'
+                : 'bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700'
+            )}
+          >
+            {isUploading ? (
+              <>
+                <svg className="h-3.5 w-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                </svg>
+                Uploading...
+              </>
+            ) : (
+              <>
+                <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1M12 4v12m0-12l-4 4m4-4l4 4" />
+                </svg>
+                Upload
+              </>
+            )}
+          </button>
+        </Tooltip>
+      )}
+
+      <Divider />
+
       {/* Save status */}
       {onSave && (
         <Tooltip content={isSaving ? "Saving..." : "Save document"} shortcut="⌘S">
@@ -314,7 +352,8 @@ export function Toolbar({
             ) : (
               <>
                 <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 7a2 2 0 012-2h8l4 4v10a2 2 0 01-2 2H7a2 2 0 01-2-2V7z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5v4h6V5M9 15h6" />
                 </svg>
                 Save
               </>
