@@ -31,6 +31,8 @@ export function Editor({ initialContent = '', onSave }: EditorProps) {
   const markdownContentRef = useRef('')
   const isApplyingMarkdownRef = useRef(false)
   const markdownSyncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const modeSwitchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const lastSyncedMarkdownRef = useRef('')
   const viewModeRef = useRef<'wysiwyg' | 'markdown'>('wysiwyg')
 
   const editor = useEditor({
@@ -73,11 +75,11 @@ export function Editor({ initialContent = '', onSave }: EditorProps) {
     if (!editor) return true
 
     try {
-      const editorMarkdown = htmlToMarkdown(editor.getHTML())
-      if (editorMarkdown === nextMarkdown) return true
+      if (lastSyncedMarkdownRef.current === nextMarkdown) return true
 
       isApplyingMarkdownRef.current = true
       editor.commands.setContent(markdownToHtml(nextMarkdown), true)
+      lastSyncedMarkdownRef.current = nextMarkdown
       return true
     } catch {
       setNotification('Failed to parse markdown. Please check syntax.')
@@ -101,14 +103,29 @@ export function Editor({ initialContent = '', onSave }: EditorProps) {
 
   // View mode toggle handler
   const handleViewModeChange = useCallback((newMode: 'wysiwyg' | 'markdown') => {
+    viewModeRef.current = newMode
+
     if (!editor) {
       setViewMode(newMode)
       return
     }
 
+    if (modeSwitchTimerRef.current) {
+      clearTimeout(modeSwitchTimerRef.current)
+      modeSwitchTimerRef.current = null
+    }
+
     if (newMode === 'markdown') {
-      setMarkdownContent(htmlToMarkdown(editor.getHTML()))
       setViewMode(newMode)
+
+      modeSwitchTimerRef.current = setTimeout(() => {
+        if (viewModeRef.current !== 'markdown') return
+
+        const nextMarkdown = htmlToMarkdown(editor.getHTML())
+        lastSyncedMarkdownRef.current = nextMarkdown
+        setMarkdownContent(nextMarkdown)
+        modeSwitchTimerRef.current = null
+      }, 0)
       return
     }
 
@@ -118,8 +135,12 @@ export function Editor({ initialContent = '', onSave }: EditorProps) {
       markdownSyncTimerRef.current = null
     }
 
-    applyMarkdownToEditor(markdownContentRef.current)
     setViewMode(newMode)
+    const pendingMarkdown = markdownContentRef.current
+    modeSwitchTimerRef.current = setTimeout(() => {
+      applyMarkdownToEditor(pendingMarkdown)
+      modeSwitchTimerRef.current = null
+    }, 0)
   }, [applyMarkdownToEditor, editor])
 
   useEffect(() => {
@@ -144,6 +165,7 @@ export function Editor({ initialContent = '', onSave }: EditorProps) {
       const nextMarkdown = htmlToMarkdown(editor.getHTML())
 
       if (nextMarkdown !== markdownContentRef.current) {
+        lastSyncedMarkdownRef.current = nextMarkdown
         setMarkdownContent(nextMarkdown)
       }
     }
@@ -169,6 +191,13 @@ export function Editor({ initialContent = '', onSave }: EditorProps) {
       }
     }
   }, [applyMarkdownToEditor, editor, markdownContent, viewMode])
+
+  useEffect(() => {
+    return () => {
+      if (markdownSyncTimerRef.current) clearTimeout(markdownSyncTimerRef.current)
+      if (modeSwitchTimerRef.current) clearTimeout(modeSwitchTimerRef.current)
+    }
+  }, [])
 
   // Auto-save functionality
   const handleSave = useCallback(async () => {
