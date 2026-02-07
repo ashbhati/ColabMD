@@ -171,7 +171,9 @@ export function Editor({ initialContent = '', onSave }: EditorProps) {
     }
 
     editor.on('update', handleEditorUpdate)
-    return () => editor.off('update', handleEditorUpdate)
+    return () => {
+      editor.off('update', handleEditorUpdate)
+    }
   }, [editor])
 
   useEffect(() => {
