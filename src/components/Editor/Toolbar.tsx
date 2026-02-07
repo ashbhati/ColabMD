@@ -1,6 +1,7 @@
 'use client'
 
 import { Editor } from '@tiptap/react'
+import { useEffect, useRef, useState } from 'react'
 import { cn } from '@/lib/utils'
 import { Tooltip } from '@/components/ui/Tooltip'
 
@@ -54,6 +55,31 @@ function Divider() {
   return <div className="mx-1 h-5 w-px bg-slate-200 dark:bg-slate-700" />
 }
 
+interface OverflowMenuItemProps {
+  label: string
+  onClick: () => void
+  isActive?: boolean
+  disabled?: boolean
+}
+
+function OverflowMenuItem({ label, onClick, isActive, disabled }: OverflowMenuItemProps) {
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      className={cn(
+        'w-full rounded-md px-2.5 py-1.5 text-left text-xs transition-colors',
+        isActive
+          ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300'
+          : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800',
+        disabled && 'cursor-not-allowed opacity-40'
+      )}
+    >
+      {label}
+    </button>
+  )
+}
+
 export function Toolbar({
   editor,
   isSaving,
@@ -64,8 +90,30 @@ export function Toolbar({
   onToggleCommentsSidebar,
   commentCount
 }: ToolbarProps) {
+  const [isOverflowOpen, setIsOverflowOpen] = useState(false)
+  const overflowRef = useRef<HTMLDivElement | null>(null)
+  const isCompact = !!isCommentsSidebarOpen
+
+  useEffect(() => {
+    if (!isOverflowOpen) return
+
+    const handleClickOutside = (event: MouseEvent) => {
+      if (!overflowRef.current?.contains(event.target as Node)) {
+        setIsOverflowOpen(false)
+      }
+    }
+
+    window.addEventListener('mousedown', handleClickOutside)
+    return () => window.removeEventListener('mousedown', handleClickOutside)
+  }, [isOverflowOpen])
+
+  const runOverflowAction = (action: () => void) => {
+    action()
+    setIsOverflowOpen(false)
+  }
+
   return (
-    <div className="sticky top-16 z-30 flex w-full min-w-0 items-center gap-0.5 overflow-x-auto rounded-lg border border-slate-200 bg-white/95 px-1.5 py-1 backdrop-blur-sm dark:border-slate-800 dark:bg-slate-900/95">
+    <div className="sticky top-16 z-30 flex w-full min-w-0 items-center gap-0.5 overflow-hidden rounded-lg border border-slate-200 bg-white/95 px-1.5 py-1 backdrop-blur-sm dark:border-slate-800 dark:bg-slate-900/95">
       {/* Text formatting */}
       <ToolbarButton
         onClick={() => editor.chain().focus().toggleBold().run()}
@@ -114,103 +162,110 @@ export function Toolbar({
         </svg>
       </ToolbarButton>
 
-      <Divider />
+      {!isCompact && <Divider />}
 
       {/* Headings */}
-      <ToolbarButton
-        onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
-        isActive={editor.isActive('heading', { level: 1 })}
-        title="Heading 1"
-        shortcut="⌘⌥1"
-      >
-        <span className="text-sm font-bold">H1</span>
-      </ToolbarButton>
+      {!isCompact && (
+        <>
+          <ToolbarButton
+            onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
+            isActive={editor.isActive('heading', { level: 1 })}
+            title="Heading 1"
+            shortcut="⌘⌥1"
+          >
+            <span className="text-sm font-bold">H1</span>
+          </ToolbarButton>
 
-      <ToolbarButton
-        onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
-        isActive={editor.isActive('heading', { level: 2 })}
-        title="Heading 2"
-        shortcut="⌘⌥2"
-      >
-        <span className="text-sm font-bold">H2</span>
-      </ToolbarButton>
+          <ToolbarButton
+            onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
+            isActive={editor.isActive('heading', { level: 2 })}
+            title="Heading 2"
+            shortcut="⌘⌥2"
+          >
+            <span className="text-sm font-bold">H2</span>
+          </ToolbarButton>
 
-      <ToolbarButton
-        onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
-        isActive={editor.isActive('heading', { level: 3 })}
-        title="Heading 3"
-        shortcut="⌘⌥3"
-      >
-        <span className="text-sm font-bold">H3</span>
-      </ToolbarButton>
+          <ToolbarButton
+            onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
+            isActive={editor.isActive('heading', { level: 3 })}
+            title="Heading 3"
+            shortcut="⌘⌥3"
+          >
+            <span className="text-sm font-bold">H3</span>
+          </ToolbarButton>
 
-      <Divider />
+          <Divider />
+        </>
+      )}
 
       {/* Lists */}
-      <ToolbarButton
-        onClick={() => editor.chain().focus().toggleBulletList().run()}
-        isActive={editor.isActive('bulletList')}
-        title="Bullet list"
-        shortcut="⌘⇧8"
-      >
-        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-          <circle cx="2" cy="6" r="1" fill="currentColor" />
-          <circle cx="2" cy="12" r="1" fill="currentColor" />
-          <circle cx="2" cy="18" r="1" fill="currentColor" />
-        </svg>
-      </ToolbarButton>
+      {!isCompact && (
+        <>
+          <ToolbarButton
+            onClick={() => editor.chain().focus().toggleBulletList().run()}
+            isActive={editor.isActive('bulletList')}
+            title="Bullet list"
+            shortcut="⌘⇧8"
+          >
+            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              <circle cx="2" cy="6" r="1" fill="currentColor" />
+              <circle cx="2" cy="12" r="1" fill="currentColor" />
+              <circle cx="2" cy="18" r="1" fill="currentColor" />
+            </svg>
+          </ToolbarButton>
 
-      <ToolbarButton
-        onClick={() => editor.chain().focus().toggleOrderedList().run()}
-        isActive={editor.isActive('orderedList')}
-        title="Numbered list"
-        shortcut="⌘⇧7"
-      >
-        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 6h13M7 12h13M7 18h13" />
-          <text x="2" y="8" fontSize="8" fill="currentColor">1</text>
-          <text x="2" y="14" fontSize="8" fill="currentColor">2</text>
-          <text x="2" y="20" fontSize="8" fill="currentColor">3</text>
-        </svg>
-      </ToolbarButton>
+          <ToolbarButton
+            onClick={() => editor.chain().focus().toggleOrderedList().run()}
+            isActive={editor.isActive('orderedList')}
+            title="Numbered list"
+            shortcut="⌘⇧7"
+          >
+            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 6h13M7 12h13M7 18h13" />
+              <text x="2" y="8" fontSize="8" fill="currentColor">1</text>
+              <text x="2" y="14" fontSize="8" fill="currentColor">2</text>
+              <text x="2" y="20" fontSize="8" fill="currentColor">3</text>
+            </svg>
+          </ToolbarButton>
 
-      <ToolbarButton
-        onClick={() => editor.chain().focus().toggleBlockquote().run()}
-        isActive={editor.isActive('blockquote')}
-        title="Quote"
-        shortcut="⌘⇧B"
-      >
-        <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
-          <path d="M6 17h3l2-4V7H5v6h3zm8 0h3l2-4V7h-6v6h3z" />
-        </svg>
-      </ToolbarButton>
+          <ToolbarButton
+            onClick={() => editor.chain().focus().toggleBlockquote().run()}
+            isActive={editor.isActive('blockquote')}
+            title="Quote"
+            shortcut="⌘⇧B"
+          >
+            <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M6 17h3l2-4V7H5v6h3zm8 0h3l2-4V7h-6v6h3z" />
+            </svg>
+          </ToolbarButton>
 
-      <ToolbarButton
-        onClick={() => editor.chain().focus().toggleCodeBlock().run()}
-        isActive={editor.isActive('codeBlock')}
-        title="Code block"
-        shortcut="⌘⌥C"
-      >
-        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <rect x="3" y="4" width="18" height="16" rx="2" strokeWidth={2} />
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10l-2 2 2 2m4-4l2 2-2 2" />
-        </svg>
-      </ToolbarButton>
+          <ToolbarButton
+            onClick={() => editor.chain().focus().toggleCodeBlock().run()}
+            isActive={editor.isActive('codeBlock')}
+            title="Code block"
+            shortcut="⌘⌥C"
+          >
+            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <rect x="3" y="4" width="18" height="16" rx="2" strokeWidth={2} />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10l-2 2 2 2m4-4l2 2-2 2" />
+            </svg>
+          </ToolbarButton>
 
-      <Divider />
+          <Divider />
 
-      {/* Horizontal rule */}
-      <ToolbarButton
-        onClick={() => editor.chain().focus().setHorizontalRule().run()}
-        title="Horizontal rule"
-      >
-        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 12h16" />
-        </svg>
-      </ToolbarButton>
+          <ToolbarButton
+            onClick={() => editor.chain().focus().setHorizontalRule().run()}
+            title="Horizontal rule"
+          >
+            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 12h16" />
+            </svg>
+          </ToolbarButton>
 
-      <Divider />
+          <Divider />
+        </>
+      )}
 
       {/* Undo/Redo */}
       <ToolbarButton
@@ -237,6 +292,66 @@ export function Toolbar({
 
       <Divider />
 
+      {isCompact && (
+        <div className="relative" ref={overflowRef}>
+          <ToolbarButton
+            onClick={() => setIsOverflowOpen((open) => !open)}
+            isActive={isOverflowOpen}
+            title="More tools"
+          >
+            <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
+              <circle cx="12" cy="5" r="2" />
+              <circle cx="12" cy="12" r="2" />
+              <circle cx="12" cy="19" r="2" />
+            </svg>
+          </ToolbarButton>
+
+          {isOverflowOpen && (
+            <div className="absolute left-0 top-9 z-40 min-w-[170px] space-y-1 rounded-lg border border-slate-200 bg-white p-1.5 shadow-lg dark:border-slate-700 dark:bg-slate-900">
+              <OverflowMenuItem
+                label="Heading 1"
+                onClick={() => runOverflowAction(() => editor.chain().focus().toggleHeading({ level: 1 }).run())}
+                isActive={editor.isActive('heading', { level: 1 })}
+              />
+              <OverflowMenuItem
+                label="Heading 2"
+                onClick={() => runOverflowAction(() => editor.chain().focus().toggleHeading({ level: 2 }).run())}
+                isActive={editor.isActive('heading', { level: 2 })}
+              />
+              <OverflowMenuItem
+                label="Heading 3"
+                onClick={() => runOverflowAction(() => editor.chain().focus().toggleHeading({ level: 3 }).run())}
+                isActive={editor.isActive('heading', { level: 3 })}
+              />
+              <OverflowMenuItem
+                label="Bullet list"
+                onClick={() => runOverflowAction(() => editor.chain().focus().toggleBulletList().run())}
+                isActive={editor.isActive('bulletList')}
+              />
+              <OverflowMenuItem
+                label="Numbered list"
+                onClick={() => runOverflowAction(() => editor.chain().focus().toggleOrderedList().run())}
+                isActive={editor.isActive('orderedList')}
+              />
+              <OverflowMenuItem
+                label="Quote"
+                onClick={() => runOverflowAction(() => editor.chain().focus().toggleBlockquote().run())}
+                isActive={editor.isActive('blockquote')}
+              />
+              <OverflowMenuItem
+                label="Code block"
+                onClick={() => runOverflowAction(() => editor.chain().focus().toggleCodeBlock().run())}
+                isActive={editor.isActive('codeBlock')}
+              />
+              <OverflowMenuItem
+                label="Horizontal rule"
+                onClick={() => runOverflowAction(() => editor.chain().focus().setHorizontalRule().run())}
+              />
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Comments sidebar toggle */}
       <div className="relative">
         <ToolbarButton
@@ -259,34 +374,71 @@ export function Toolbar({
       <div className="flex-1" />
 
       {/* View Mode Toggle */}
-      <div className="flex items-center rounded-md bg-slate-100 dark:bg-slate-800 p-0.5">
-        <Tooltip content="Rich Text View">
-          <button
-            onClick={() => onViewModeChange('wysiwyg')}
-            className={cn(
-              'rounded px-2 py-1 text-xs font-medium transition-colors',
-              viewMode === 'wysiwyg'
-                ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 shadow-sm'
-                : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
-            )}
-          >
-            Rich
-          </button>
-        </Tooltip>
-        <Tooltip content="Markdown Source">
-          <button
-            onClick={() => onViewModeChange('markdown')}
-            className={cn(
-              'rounded px-2 py-1 text-xs font-medium transition-colors',
-              viewMode === 'markdown'
-                ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 shadow-sm'
-                : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
-            )}
-          >
-            MD
-          </button>
-        </Tooltip>
-      </div>
+      {isCompact ? (
+        <div className="flex items-center rounded-md bg-slate-100 p-0.5 dark:bg-slate-800">
+          <Tooltip content="Rich Text View">
+            <button
+              onClick={() => onViewModeChange('wysiwyg')}
+              className={cn(
+                'rounded p-1.5 transition-colors',
+                viewMode === 'wysiwyg'
+                  ? 'bg-white text-slate-900 shadow-sm dark:bg-slate-700 dark:text-slate-100'
+                  : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300'
+              )}
+              aria-label="Rich Text View"
+            >
+              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h10" />
+              </svg>
+            </button>
+          </Tooltip>
+          <Tooltip content="Markdown Source">
+            <button
+              onClick={() => onViewModeChange('markdown')}
+              className={cn(
+                'rounded p-1.5 transition-colors',
+                viewMode === 'markdown'
+                  ? 'bg-white text-slate-900 shadow-sm dark:bg-slate-700 dark:text-slate-100'
+                  : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300'
+              )}
+              aria-label="Markdown Source"
+            >
+              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8l-4 4 4 4m10-8l4 4-4 4M14 4l-4 16" />
+              </svg>
+            </button>
+          </Tooltip>
+        </div>
+      ) : (
+        <div className="flex items-center rounded-md bg-slate-100 dark:bg-slate-800 p-0.5">
+          <Tooltip content="Rich Text View">
+            <button
+              onClick={() => onViewModeChange('wysiwyg')}
+              className={cn(
+                'rounded px-2 py-1 text-xs font-medium transition-colors',
+                viewMode === 'wysiwyg'
+                  ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 shadow-sm'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
+              )}
+            >
+              Rich
+            </button>
+          </Tooltip>
+          <Tooltip content="Markdown Source">
+            <button
+              onClick={() => onViewModeChange('markdown')}
+              className={cn(
+                'rounded px-2 py-1 text-xs font-medium transition-colors',
+                viewMode === 'markdown'
+                  ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 shadow-sm'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
+              )}
+            >
+              MD
+            </button>
+          </Tooltip>
+        </div>
+      )}
 
       <Divider />
 
@@ -302,6 +454,7 @@ export function Toolbar({
                 ? 'bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-500'
                 : 'bg-indigo-50 text-indigo-600 hover:bg-indigo-100 dark:bg-indigo-950 dark:text-indigo-400 dark:hover:bg-indigo-900'
             )}
+            aria-label="Save document"
           >
             {isSaving ? (
               <>
@@ -309,7 +462,7 @@ export function Toolbar({
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                 </svg>
-                Saving...
+                {!isCompact && 'Saving...'}
               </>
             ) : (
               <>
@@ -317,7 +470,7 @@ export function Toolbar({
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 7a2 2 0 012-2h8l4 4v10a2 2 0 01-2 2H7a2 2 0 01-2-2V7z" />
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5v4h6V5M9 15h6" />
                 </svg>
-                Save
+                {!isCompact && 'Save'}
               </>
             )}
           </button>

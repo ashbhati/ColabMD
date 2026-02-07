@@ -205,11 +205,5 @@ npm test         # Run tests
 ---
 
 ## TODO
-- [x] Implement link-based sharing for users without accounts
-- [x] Remove debug logging from liveblocks-auth route (search for `console.log("[liveblocks-auth]`)
 - [ ] Test real-time collaboration with multiple users
 - [ ] Verify all 4 comment features work in production (Vercel)
-- [x] Switching the editor from Rich to MD is working fine but from MD to Rich not working fine. Fix it such that switching between rich text editor view to markdown editor view and back n forth is working fine.
-- [x] Save icon looks like download icon. Fix it to save icon
-- [x] New Feature: Ability to upload a markdown file from local drive.
-- [x] New Feature: When the comments flyout is in open state, today it overlaps and covers the editor. When the comment flyout is in open state, the editor should shrink left, to accomodate for the comments flyout.
