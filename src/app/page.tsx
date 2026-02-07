@@ -6,6 +6,7 @@ import { useAuth } from '@/components/Auth'
 import { Header } from '@/components/Header'
 import { DocumentList } from '@/components/DocumentList'
 import { LoginButton } from '@/components/Auth'
+import { markdownToHtml } from '@/lib/markdown'
 
 interface Document {
   id: string
@@ -28,6 +29,7 @@ export default function Dashboard() {
   })
   const [isLoading, setIsLoading] = useState(true)
   const [isCreating, setIsCreating] = useState(false)
+  const [isUploading, setIsUploading] = useState(false)
 
   const fetchDocuments = useCallback(async () => {
     try {
@@ -101,6 +103,34 @@ export default function Dashboard() {
       }
     } catch (error) {
       console.error('Failed to rename document:', error)
+    }
+  }
+
+  const handleUploadMarkdown = async (file: File) => {
+    setIsUploading(true)
+    try {
+      const markdownContent = await file.text()
+      const title = file.name.replace(/\.[^.]+$/, '') || 'Untitled Document'
+
+      const response = await fetch('/api/documents', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title,
+          content: markdownToHtml(markdownContent),
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to upload markdown')
+      }
+
+      const doc = await response.json()
+      router.push(`/doc/${doc.id}`)
+    } catch (error) {
+      console.error('Failed to upload markdown:', error)
+    } finally {
+      setIsUploading(false)
     }
   }
 
@@ -180,9 +210,11 @@ export default function Dashboard() {
           owned={documents.owned}
           shared={documents.shared}
           onCreateDocument={handleCreateDocument}
+          onUploadMarkdown={handleUploadMarkdown}
           onDeleteDocument={handleDeleteDocument}
           onRenameDocument={handleRenameDocument}
           isCreating={isCreating}
+          isUploading={isUploading}
         />
       </main>
     </div>

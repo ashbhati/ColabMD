@@ -7,9 +7,7 @@ import { Tooltip } from '@/components/ui/Tooltip'
 interface ToolbarProps {
   editor: Editor
   isSaving?: boolean
-  isUploading?: boolean
   onSave?: () => void
-  onUploadMarkdown?: () => void
   viewMode: 'wysiwyg' | 'markdown'
   onViewModeChange: (mode: 'wysiwyg' | 'markdown') => void
   isCommentsSidebarOpen?: boolean
@@ -59,9 +57,7 @@ function Divider() {
 export function Toolbar({
   editor,
   isSaving,
-  isUploading,
   onSave,
-  onUploadMarkdown,
   viewMode,
   onViewModeChange,
   isCommentsSidebarOpen,
@@ -69,7 +65,7 @@ export function Toolbar({
   commentCount
 }: ToolbarProps) {
   return (
-    <div className="sticky top-16 z-30 flex items-center gap-0.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-white/95 dark:bg-slate-900/95 backdrop-blur-sm px-1.5 py-1">
+    <div className="sticky top-16 z-30 flex w-full min-w-0 items-center gap-0.5 overflow-x-auto rounded-lg border border-slate-200 bg-white/95 px-1.5 py-1 backdrop-blur-sm dark:border-slate-800 dark:bg-slate-900/95">
       {/* Text formatting */}
       <ToolbarButton
         onClick={() => editor.chain().focus().toggleBold().run()}
@@ -291,40 +287,6 @@ export function Toolbar({
           </button>
         </Tooltip>
       </div>
-
-      <Divider />
-
-      {onUploadMarkdown && (
-        <Tooltip content={isUploading ? 'Uploading...' : 'Upload markdown file'}>
-          <button
-            onClick={onUploadMarkdown}
-            disabled={isUploading}
-            className={cn(
-              'flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium transition-all duration-150',
-              isUploading
-                ? 'bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-500'
-                : 'bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700'
-            )}
-          >
-            {isUploading ? (
-              <>
-                <svg className="h-3.5 w-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                </svg>
-                Uploading...
-              </>
-            ) : (
-              <>
-                <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1M12 4v12m0-12l-4 4m4-4l4 4" />
-                </svg>
-                Upload
-              </>
-            )}
-          </button>
-        </Tooltip>
-      )}
 
       <Divider />
 

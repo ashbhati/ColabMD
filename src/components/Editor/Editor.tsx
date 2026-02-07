@@ -4,10 +4,10 @@ import { useEditor, EditorContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import Placeholder from '@tiptap/extension-placeholder'
 import { useLiveblocksExtension, FloatingComposer, FloatingThreads } from '@liveblocks/react-tiptap'
-import { useThreads, useOthers } from '../../../liveblocks.config'
+import { useThreads } from '../../../liveblocks.config'
 import { Toolbar } from './Toolbar'
 import { CommentsSidebar, CustomThread } from '@/components/Comments'
-import { ChangeEvent, useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { cn } from '@/lib/utils'
 import { htmlToMarkdown, markdownToHtml } from '@/lib/markdown'
 
@@ -22,16 +22,16 @@ interface EditorProps {
 export function Editor({ initialContent = '', onSave }: EditorProps) {
   const liveblocks = useLiveblocksExtension()
   const { threads } = useThreads()
-  const others = useOthers()
   const [isSaving, setIsSaving] = useState(false)
-  const [isUploading, setIsUploading] = useState(false)
   const [viewMode, setViewMode] = useState<'wysiwyg' | 'markdown'>('wysiwyg')
   const [markdownContent, setMarkdownContent] = useState('')
   const [isCommentsSidebarOpen, setIsCommentsSidebarOpen] = useState(false)
   const [notification, setNotification] = useState<string | null>(null)
-  const markdownTextareaRef = useRef<HTMLTextAreaElement | null>(null)
-  const uploadInputRef = useRef<HTMLInputElement | null>(null)
   const hasHydratedInitialContent = useRef(false)
+  const markdownContentRef = useRef('')
+  const isApplyingMarkdownRef = useRef(false)
+  const markdownSyncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const viewModeRef = useRef<'wysiwyg' | 'markdown'>('wysiwyg')
 
   const editor = useEditor({
     extensions: [
@@ -84,42 +84,68 @@ export function Editor({ initialContent = '', onSave }: EditorProps) {
   const handleViewModeChange = useCallback((newMode: 'wysiwyg' | 'markdown') => {
     if (newMode === 'markdown' && editor) {
       setMarkdownContent(htmlToMarkdown(editor.getHTML()))
-    } else if (newMode === 'wysiwyg' && editor) {
-      const currentMarkdown = markdownTextareaRef.current?.value ?? markdownContent
-      editor.commands.setContent(markdownToHtml(currentMarkdown))
     }
     setViewMode(newMode)
-  }, [editor, markdownContent])
+  }, [editor])
 
-  const handleUploadMarkdown = useCallback(() => {
-    uploadInputRef.current?.click()
-  }, [])
+  useEffect(() => {
+    markdownContentRef.current = markdownContent
+  }, [markdownContent])
 
-  const handleUploadInputChange = useCallback(async (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
-    if (!file) return
+  useEffect(() => {
+    viewModeRef.current = viewMode
+  }, [viewMode])
 
-    setIsUploading(true)
+  useEffect(() => {
+    if (!editor) return
 
-    try {
-      const markdownText = await file.text()
-
-      if (viewMode === 'markdown') {
-        setMarkdownContent(markdownText)
-      } else if (editor) {
-        editor.commands.setContent(markdownToHtml(markdownText))
-      }
-
-      setNotification(`Loaded "${file.name}"`)
-      setTimeout(() => setNotification(null), 3000)
-    } catch {
-      setNotification('Failed to load markdown file')
-      setTimeout(() => setNotification(null), 3000)
-    } finally {
-      event.target.value = ''
-      setIsUploading(false)
+    if (typeof editor.on !== 'function' || typeof editor.off !== 'function') {
+      return
     }
-  }, [editor, viewMode])
+
+    const handleEditorUpdate = () => {
+      if (viewModeRef.current !== 'markdown') return
+      if (isApplyingMarkdownRef.current) return
+
+      const nextMarkdown = htmlToMarkdown(editor.getHTML())
+
+      if (nextMarkdown !== markdownContentRef.current) {
+        setMarkdownContent(nextMarkdown)
+      }
+    }
+
+    editor.on('update', handleEditorUpdate)
+    return () => editor.off('update', handleEditorUpdate)
+  }, [editor])
+
+  useEffect(() => {
+    if (!editor || viewMode !== 'markdown') return
+
+    if (markdownSyncTimerRef.current) {
+      clearTimeout(markdownSyncTimerRef.current)
+    }
+
+    markdownSyncTimerRef.current = setTimeout(() => {
+      try {
+        const editorMarkdown = htmlToMarkdown(editor.getHTML())
+        if (editorMarkdown === markdownContentRef.current) return
+
+        isApplyingMarkdownRef.current = true
+        editor.commands.setContent(markdownToHtml(markdownContentRef.current), true)
+      } catch {
+        setNotification('Failed to parse markdown. Please check syntax.')
+        setTimeout(() => setNotification(null), 3000)
+      } finally {
+        isApplyingMarkdownRef.current = false
+      }
+    }, 200)
+
+    return () => {
+      if (markdownSyncTimerRef.current) {
+        clearTimeout(markdownSyncTimerRef.current)
+      }
+    }
+  }, [editor, markdownContent, viewMode])
 
   // Auto-save functionality
   const handleSave = useCallback(async () => {
@@ -220,37 +246,21 @@ export function Editor({ initialContent = '', onSave }: EditorProps) {
 
   return (
     <div className="relative">
-      <input
-        ref={uploadInputRef}
-        type="file"
-        accept=".md,.markdown,text/markdown,text/plain"
-        className="hidden"
-        onChange={handleUploadInputChange}
-      />
-
-      <Toolbar
-        editor={editor}
-        isSaving={isSaving}
-        isUploading={isUploading}
-        onSave={handleSave}
-        onUploadMarkdown={handleUploadMarkdown}
-        viewMode={viewMode}
-        onViewModeChange={handleViewModeChange}
-        isCommentsSidebarOpen={isCommentsSidebarOpen}
-        onToggleCommentsSidebar={() => setIsCommentsSidebarOpen(!isCommentsSidebarOpen)}
-        commentCount={threads.length}
-      />
-
-      {viewMode === 'markdown' && others.length > 0 && (
-        <div className="mt-2 px-3 py-2 bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded-lg text-xs text-amber-700 dark:text-amber-300">
-          Changes won&apos;t sync until you switch back to Rich view
-        </div>
-      )}
-
       <div className={cn(
         'transition-[padding-right] duration-300 ease-in-out',
         isCommentsSidebarOpen ? 'pr-80' : 'pr-0'
       )}>
+        <Toolbar
+          editor={editor}
+          isSaving={isSaving}
+          onSave={handleSave}
+          viewMode={viewMode}
+          onViewModeChange={handleViewModeChange}
+          isCommentsSidebarOpen={isCommentsSidebarOpen}
+          onToggleCommentsSidebar={() => setIsCommentsSidebarOpen(!isCommentsSidebarOpen)}
+          commentCount={threads.length}
+        />
+
         {viewMode === 'wysiwyg' ? (
           <div className="relative mt-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
             <EditorContent editor={editor} />
@@ -260,7 +270,6 @@ export function Editor({ initialContent = '', onSave }: EditorProps) {
           </div>
         ) : (
           <textarea
-            ref={markdownTextareaRef}
             value={markdownContent}
             onChange={(e) => setMarkdownContent(e.target.value)}
             className="w-full min-h-[500px] px-10 py-8 font-mono text-sm leading-relaxed
