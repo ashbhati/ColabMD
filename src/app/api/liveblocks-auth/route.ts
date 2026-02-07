@@ -1,5 +1,5 @@
 import { Liveblocks } from "@liveblocks/node";
-import { createServerSupabaseClient } from "@/lib/supabase-server";
+import { createAdminSupabaseClient, createServerSupabaseClient } from "@/lib/supabase-server";
 import { isValidUUID } from "@/lib/validation";
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
@@ -28,6 +28,7 @@ function getUserColor(userId: string): string {
 export async function POST(request: Request) {
   try {
     const supabase = await createServerSupabaseClient();
+    const adminSupabase = createAdminSupabaseClient();
 
     const { data: { user }, error: authError } = await supabase.auth.getUser();
 
@@ -51,7 +52,7 @@ export async function POST(request: Request) {
     }
 
     // Check if user has access to this document
-    const { data: document } = await supabase
+    const { data: document } = await adminSupabase
       .from("documents")
       .select()
       .eq("id", documentId)
@@ -65,12 +66,12 @@ export async function POST(request: Request) {
     let permission = "write" as "write" | "read" | "comment";
 
     if (!canAccess) {
-      const { data: share } = await supabase
+      const { data: share } = await adminSupabase
         .from("document_shares")
         .select()
         .eq("document_id", documentId)
         .eq("user_id", user.id)
-        .single();
+        .maybeSingle();
 
       if (share) {
         canAccess = true;
@@ -83,12 +84,12 @@ export async function POST(request: Request) {
       const shareToken = cookieStore.get(`share_${documentId}`)?.value;
 
       if (shareToken) {
-        const { data: tokenShare } = await supabase
+        const { data: tokenShare } = await adminSupabase
           .from("document_shares")
           .select("permission")
           .eq("document_id", documentId)
           .eq("share_token", shareToken)
-          .single();
+          .maybeSingle();
 
         if (tokenShare) {
           canAccess = true;

@@ -1,4 +1,4 @@
-import { createServerSupabaseClient } from '@/lib/supabase-server'
+import { createAdminSupabaseClient, createServerSupabaseClient } from '@/lib/supabase-server'
 import { isValidUUID, sanitizeTitle, isValidContentSize } from '@/lib/validation'
 import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
@@ -35,6 +35,7 @@ export async function GET(
     }
 
     const supabase = await createServerSupabaseClient()
+    const adminSupabase = createAdminSupabaseClient()
 
     const { data: { user }, error: authError } = await supabase.auth.getUser()
 
@@ -43,7 +44,7 @@ export async function GET(
     }
 
     // Check if user owns the document or has access via share
-    const { data, error } = await supabase
+    const { data, error } = await adminSupabase
       .from('documents')
       .select('*')
       .eq('id', id)
@@ -57,12 +58,12 @@ export async function GET(
 
     // Check ownership or share permission
     if (document.owner_id !== user.id) {
-      const { data: shareData } = await supabase
+      const { data: shareData } = await adminSupabase
         .from('document_shares')
         .select('*')
         .eq('document_id', id)
         .eq('user_id', user.id)
-        .single()
+        .maybeSingle()
 
       if (!shareData) {
         const { searchParams } = new URL(request.url)
@@ -75,12 +76,12 @@ export async function GET(
           return NextResponse.json({ error: 'Access denied' }, { status: 403 })
         }
 
-        const { data: tokenShare } = await supabase
+        const { data: tokenShare } = await adminSupabase
           .from('document_shares')
           .select('id')
           .eq('document_id', id)
           .eq('share_token', shareToken)
-          .single()
+          .maybeSingle()
 
         if (!tokenShare) {
           return NextResponse.json({ error: 'Access denied' }, { status: 403 })
@@ -109,6 +110,7 @@ export async function PATCH(
     }
 
     const supabase = await createServerSupabaseClient()
+    const adminSupabase = createAdminSupabaseClient()
 
     const { data: { user }, error: authError } = await supabase.auth.getUser()
 
@@ -117,7 +119,7 @@ export async function PATCH(
     }
 
     // Check if user has edit permission
-    const { data: docData, error: docError } = await supabase
+    const { data: docData, error: docError } = await adminSupabase
       .from('documents')
       .select('*')
       .eq('id', id)
@@ -131,12 +133,12 @@ export async function PATCH(
     let canEdit = document.owner_id === user.id
 
     if (!canEdit) {
-      const { data: shareData } = await supabase
+      const { data: shareData } = await adminSupabase
         .from('document_shares')
         .select('*')
         .eq('document_id', id)
         .eq('user_id', user.id)
-        .single()
+        .maybeSingle()
 
       const share = shareData as ShareRow | null
       canEdit = share?.permission === 'edit'
@@ -149,12 +151,12 @@ export async function PATCH(
         const shareToken = shareTokenFromQuery || shareTokenFromCookie
 
         if (shareToken) {
-          const { data: tokenShare } = await supabase
+          const { data: tokenShare } = await adminSupabase
             .from('document_shares')
             .select('permission')
             .eq('document_id', id)
             .eq('share_token', shareToken)
-            .single()
+            .maybeSingle()
 
           const tokenPermission = (tokenShare as Pick<ShareRow, 'permission'> | null)?.permission
           canEdit = tokenPermission === 'edit'
@@ -178,7 +180,7 @@ export async function PATCH(
     }
     updates.updated_at = new Date().toISOString()
 
-    const { data, error } = await supabase
+    const { data, error } = await adminSupabase
       .from('documents')
       .update(updates)
       .eq('id', id)
@@ -199,7 +201,7 @@ export async function PATCH(
 
 // DELETE /api/documents/[id] - Delete a document
 export async function DELETE(
-  request: Request,
+  _request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
@@ -211,6 +213,7 @@ export async function DELETE(
     }
 
     const supabase = await createServerSupabaseClient()
+    const adminSupabase = createAdminSupabaseClient()
 
     const { data: { user }, error: authError } = await supabase.auth.getUser()
 
@@ -219,7 +222,7 @@ export async function DELETE(
     }
 
     // Only owner can delete
-    const { data: docData, error: docError } = await supabase
+    const { data: docData, error: docError } = await adminSupabase
       .from('documents')
       .select('*')
       .eq('id', id)
@@ -236,13 +239,13 @@ export async function DELETE(
     }
 
     // Delete shares first
-    await supabase
+    await adminSupabase
       .from('document_shares')
       .delete()
       .eq('document_id', id)
 
     // Delete document
-    const { error } = await supabase
+    const { error } = await adminSupabase
       .from('documents')
       .delete()
       .eq('id', id)

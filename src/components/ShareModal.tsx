@@ -28,6 +28,7 @@ export function ShareModal({ documentId, isOpen, onClose }: ShareModalProps) {
   const [permission, setPermission] = useState<'view' | 'edit' | 'comment'>('view')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [notice, setNotice] = useState<string | null>(null)
   const [linkShare, setLinkShare] = useState<{ token: string; permission: string } | null>(null)
   const [copied, setCopied] = useState(false)
 
@@ -60,6 +61,7 @@ export function ShareModal({ documentId, isOpen, onClose }: ShareModalProps) {
   const handleShare = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
+    setNotice(null)
     setIsSubmitting(true)
 
     try {
@@ -73,6 +75,16 @@ export function ShareModal({ documentId, isOpen, onClose }: ShareModalProps) {
         const data = await response.json()
         setError(data.error || 'Failed to share document')
         return
+      }
+
+      const data = await response.json()
+
+      if (data.share_token && data.permission) {
+        setLinkShare({ token: data.share_token, permission: data.permission })
+      }
+
+      if (data.pending_invite_email) {
+        setNotice(`Invite link created for ${data.pending_invite_email}. Share the link below so they can sign in with Google and join.`)
       }
 
       setEmail('')
@@ -177,6 +189,9 @@ export function ShareModal({ documentId, isOpen, onClose }: ShareModalProps) {
             </form>
             {error && (
               <p className="mt-2 text-sm text-red-600 dark:text-red-400">{error}</p>
+            )}
+            {notice && (
+              <p className="mt-2 text-sm text-emerald-600 dark:text-emerald-400">{notice}</p>
             )}
           </div>
 
