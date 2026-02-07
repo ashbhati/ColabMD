@@ -69,6 +69,25 @@ export function Editor({ initialContent = '', onSave }: EditorProps) {
     immediatelyRender: false,
   })
 
+  const applyMarkdownToEditor = useCallback((nextMarkdown: string) => {
+    if (!editor) return true
+
+    try {
+      const editorMarkdown = htmlToMarkdown(editor.getHTML())
+      if (editorMarkdown === nextMarkdown) return true
+
+      isApplyingMarkdownRef.current = true
+      editor.commands.setContent(markdownToHtml(nextMarkdown), true)
+      return true
+    } catch {
+      setNotification('Failed to parse markdown. Please check syntax.')
+      setTimeout(() => setNotification(null), 3000)
+      return false
+    } finally {
+      isApplyingMarkdownRef.current = false
+    }
+  }, [editor])
+
   // Ensure the Supabase-backed HTML hydrates the editor/Yjs doc exactly once
   useEffect(() => {
     if (!editor || hasHydratedInitialContent.current) return
@@ -82,11 +101,26 @@ export function Editor({ initialContent = '', onSave }: EditorProps) {
 
   // View mode toggle handler
   const handleViewModeChange = useCallback((newMode: 'wysiwyg' | 'markdown') => {
-    if (newMode === 'markdown' && editor) {
-      setMarkdownContent(htmlToMarkdown(editor.getHTML()))
+    if (!editor) {
+      setViewMode(newMode)
+      return
     }
+
+    if (newMode === 'markdown') {
+      setMarkdownContent(htmlToMarkdown(editor.getHTML()))
+      setViewMode(newMode)
+      return
+    }
+
+    // Flush pending markdown edits immediately when switching back to rich view.
+    if (markdownSyncTimerRef.current) {
+      clearTimeout(markdownSyncTimerRef.current)
+      markdownSyncTimerRef.current = null
+    }
+
+    applyMarkdownToEditor(markdownContentRef.current)
     setViewMode(newMode)
-  }, [editor])
+  }, [applyMarkdownToEditor, editor])
 
   useEffect(() => {
     markdownContentRef.current = markdownContent
@@ -126,26 +160,15 @@ export function Editor({ initialContent = '', onSave }: EditorProps) {
     }
 
     markdownSyncTimerRef.current = setTimeout(() => {
-      try {
-        const editorMarkdown = htmlToMarkdown(editor.getHTML())
-        if (editorMarkdown === markdownContentRef.current) return
-
-        isApplyingMarkdownRef.current = true
-        editor.commands.setContent(markdownToHtml(markdownContentRef.current), true)
-      } catch {
-        setNotification('Failed to parse markdown. Please check syntax.')
-        setTimeout(() => setNotification(null), 3000)
-      } finally {
-        isApplyingMarkdownRef.current = false
-      }
-    }, 200)
+      applyMarkdownToEditor(markdownContentRef.current)
+    }, 80)
 
     return () => {
       if (markdownSyncTimerRef.current) {
         clearTimeout(markdownSyncTimerRef.current)
       }
     }
-  }, [editor, markdownContent, viewMode])
+  }, [applyMarkdownToEditor, editor, markdownContent, viewMode])
 
   // Auto-save functionality
   const handleSave = useCallback(async () => {
