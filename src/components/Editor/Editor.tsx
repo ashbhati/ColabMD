@@ -78,7 +78,7 @@ export function Editor({ initialContent = '', onSave }: EditorProps) {
       if (lastSyncedMarkdownRef.current === nextMarkdown) return true
 
       isApplyingMarkdownRef.current = true
-      editor.commands.setContent(markdownToHtml(nextMarkdown), true)
+      editor.commands.setContent(markdownToHtml(nextMarkdown), { emitUpdate: true })
       lastSyncedMarkdownRef.current = nextMarkdown
       return true
     } catch {
