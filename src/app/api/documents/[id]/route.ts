@@ -1,6 +1,7 @@
 import { createServerSupabaseClient } from '@/lib/supabase-server'
 import { isValidUUID, sanitizeTitle, isValidContentSize } from '@/lib/validation'
 import { NextResponse } from 'next/server'
+import { cookies } from 'next/headers'
 
 interface DocumentRow {
   id: string
@@ -64,7 +65,26 @@ export async function GET(
         .single()
 
       if (!shareData) {
-        return NextResponse.json({ error: 'Access denied' }, { status: 403 })
+        const { searchParams } = new URL(request.url)
+        const shareTokenFromQuery = searchParams.get('shareToken')
+        const cookieStore = await cookies()
+        const shareTokenFromCookie = cookieStore.get(`share_${id}`)?.value
+        const shareToken = shareTokenFromQuery || shareTokenFromCookie
+
+        if (!shareToken) {
+          return NextResponse.json({ error: 'Access denied' }, { status: 403 })
+        }
+
+        const { data: tokenShare } = await supabase
+          .from('document_shares')
+          .select('id')
+          .eq('document_id', id)
+          .eq('share_token', shareToken)
+          .single()
+
+        if (!tokenShare) {
+          return NextResponse.json({ error: 'Access denied' }, { status: 403 })
+        }
       }
     }
 
@@ -120,6 +140,26 @@ export async function PATCH(
 
       const share = shareData as ShareRow | null
       canEdit = share?.permission === 'edit'
+
+      if (!canEdit) {
+        const { searchParams } = new URL(request.url)
+        const shareTokenFromQuery = searchParams.get('shareToken')
+        const cookieStore = await cookies()
+        const shareTokenFromCookie = cookieStore.get(`share_${id}`)?.value
+        const shareToken = shareTokenFromQuery || shareTokenFromCookie
+
+        if (shareToken) {
+          const { data: tokenShare } = await supabase
+            .from('document_shares')
+            .select('permission')
+            .eq('document_id', id)
+            .eq('share_token', shareToken)
+            .single()
+
+          const tokenPermission = (tokenShare as Pick<ShareRow, 'permission'> | null)?.permission
+          canEdit = tokenPermission === 'edit'
+        }
+      }
     }
 
     if (!canEdit) {

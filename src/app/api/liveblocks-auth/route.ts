@@ -2,6 +2,7 @@ import { Liveblocks } from "@liveblocks/node";
 import { createServerSupabaseClient } from "@/lib/supabase-server";
 import { isValidUUID } from "@/lib/validation";
 import { NextResponse } from "next/server";
+import { cookies } from "next/headers";
 
 const liveblocks = new Liveblocks({
   secret: process.env.LIVEBLOCKS_SECRET_KEY!,
@@ -74,6 +75,25 @@ export async function POST(request: Request) {
       if (share) {
         canAccess = true;
         permission = share.permission === "edit" ? "write" : share.permission === "comment" ? "comment" : "read";
+      }
+    }
+
+    if (!canAccess) {
+      const cookieStore = await cookies();
+      const shareToken = cookieStore.get(`share_${documentId}`)?.value;
+
+      if (shareToken) {
+        const { data: tokenShare } = await supabase
+          .from("document_shares")
+          .select("permission")
+          .eq("document_id", documentId)
+          .eq("share_token", shareToken)
+          .single();
+
+        if (tokenShare) {
+          canAccess = true;
+          permission = tokenShare.permission === "edit" ? "write" : tokenShare.permission === "comment" ? "comment" : "read";
+        }
       }
     }
 

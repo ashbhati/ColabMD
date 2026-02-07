@@ -34,14 +34,43 @@ export async function GET(
 
     const { data: shares, error } = await supabase
       .from('document_shares')
-      .select('*, profiles(email, display_name, avatar_url)')
+      .select('*')
       .eq('document_id', id)
 
     if (error) {
       return NextResponse.json({ error: 'Failed to fetch shares' }, { status: 500 })
     }
 
-    return NextResponse.json(shares)
+    const userIds = (shares || [])
+      .map((share) => share.user_id)
+      .filter((userId): userId is string => !!userId)
+
+    let profileById: Record<string, { email: string; display_name: string | null; avatar_url: string | null }> = {}
+
+    if (userIds.length > 0) {
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, email, display_name, avatar_url')
+        .in('id', userIds)
+
+      if (profiles) {
+        profileById = profiles.reduce((acc, profile) => {
+          acc[profile.id] = {
+            email: profile.email,
+            display_name: profile.display_name,
+            avatar_url: profile.avatar_url,
+          }
+          return acc
+        }, {} as Record<string, { email: string; display_name: string | null; avatar_url: string | null }>)
+      }
+    }
+
+    const enrichedShares = (shares || []).map((share) => ({
+      ...share,
+      profiles: share.user_id ? profileById[share.user_id] ?? null : null,
+    }))
+
+    return NextResponse.json(enrichedShares)
   } catch (error) {
     console.error('Error in GET /api/documents/[id]/share:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
@@ -111,7 +140,9 @@ export async function POST(
     }
 
     // Email sharing
-    if (!email) {
+    const normalizedEmail = typeof email === 'string' ? email.trim().toLowerCase() : ''
+
+    if (!normalizedEmail) {
       return NextResponse.json({ error: 'Email is required for user sharing' }, { status: 400 })
     }
 
@@ -119,7 +150,7 @@ export async function POST(
     const { data: targetUser } = await supabase
       .from('profiles')
       .select()
-      .eq('email', email)
+      .ilike('email', normalizedEmail)
       .single()
 
     if (!targetUser) {
@@ -163,7 +194,7 @@ export async function POST(
         user_id: targetUser.id,
         permission,
       })
-      .select('*, profiles(email, display_name, avatar_url)')
+      .select('*')
       .single()
 
     if (error) {
