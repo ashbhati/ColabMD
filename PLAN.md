@@ -167,6 +167,14 @@ ColabMD/
    - Create OAuth 2.0 credentials
    - Configure authorized redirect URIs for Supabase
 
+## Product Specification Clarifications (merged)
+
+### Sharing behavior
+- Email-based sharing currently assumes recipient already has an account in ColabMD.
+- Share permissions supported: `view`, `comment`, `edit`.
+- Link/token sharing is part of the sharing model and should support access by permission.
+- Shared documents should appear on recipient dashboard under **"Shared with me"** (not only be reachable by direct link).
+
 ## Verification Plan
 
 1. **Auth Flow**: Sign in with Google, verify user appears in Supabase
@@ -175,3 +183,4 @@ ColabMD/
 4. **Presence**: See collaborator avatars and cursors
 5. **Comments**: Select text → add comment → verify in sidebar → reply → resolve
 6. **Sharing**: Generate share link, open in incognito, verify permission level
+7. **Shared Visibility**: Share a doc to another user and verify it appears in recipient **"Shared with me"** list on homepage
