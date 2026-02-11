@@ -1,4 +1,4 @@
-import { createServerSupabaseClient } from '@/lib/supabase-server'
+import { createAdminSupabaseClient, createServerSupabaseClient } from '@/lib/supabase-server'
 import { sanitizeTitle, isValidContentSize } from '@/lib/validation'
 import { NextResponse } from 'next/server'
 import { v4 as uuidv4 } from 'uuid'
@@ -7,6 +7,7 @@ import { v4 as uuidv4 } from 'uuid'
 export async function GET() {
   try {
     const supabase = await createServerSupabaseClient()
+    const adminSupabase = createAdminSupabaseClient()
 
     const { data: { user }, error: authError } = await supabase.auth.getUser()
 
@@ -26,8 +27,10 @@ export async function GET() {
       return NextResponse.json({ error: 'Failed to fetch documents' }, { status: 500 })
     }
 
-    // Get documents shared with user
-    const { data: sharedDocs, error: sharedError } = await supabase
+    // Get documents shared with user.
+    // Use admin client to avoid RLS edge cases where shared rows exist
+    // but are not visible through user-scoped policies.
+    const { data: sharedDocs, error: sharedError } = await adminSupabase
       .from('document_shares')
       .select('document_id, permission, documents(*, profiles!documents_owner_id_fkey(display_name, avatar_url))')
       .eq('user_id', user.id)
@@ -36,10 +39,13 @@ export async function GET() {
       console.error('Error fetching shared documents:', sharedError)
     }
 
-    const sharedDocuments = sharedDocs?.map(share => ({
-      ...share.documents,
-      shared_permission: share.permission,
-    })) || []
+    const sharedDocuments = (sharedDocs || [])
+      .map(share => ({
+        ...share.documents,
+        shared_permission: share.permission,
+      }))
+      .filter(doc => !!doc?.id)
+      .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())
 
     return NextResponse.json({
       owned: ownedDocs || [],
