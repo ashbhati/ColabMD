@@ -6,9 +6,18 @@ import { NextResponse } from 'next/server'
 function getSafeRedirectPath(path: string | null): string {
   if (!path) return '/'
 
+  // Decode once because login flow passes encoded next paths
+  // e.g. /auth/callback?next=%2Fshare%2Ftoken
+  let decoded = path
+  try {
+    decoded = decodeURIComponent(path)
+  } catch {
+    // keep original value if malformed encoding
+  }
+
   // Remove any whitespace characters that could be used for bypass
   // This includes \r, \n, \t, \f, and other control characters
-  const cleaned = path.replace(/[\s\x00-\x1f]/g, '')
+  const cleaned = decoded.replace(/[\s\x00-\x1f]/g, '')
 
   // Must start with exactly one / and not be a protocol-relative URL
   // Also block encoded slashes and other bypass attempts
