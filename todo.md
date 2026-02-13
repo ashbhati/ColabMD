@@ -11,5 +11,17 @@ This is the canonical backlog file for ColabMD.
 - [ ] Test real-time collaboration with multiple users.
 - [ ] Verify all 4 comment features work in production (Vercel).
 
+## New Feature Track: Google Drive Markdown Support (Phase 1)
+- [ ] Document schema migration for `document_sources` table.
+- [ ] Add API: `POST /api/integrations/google-drive/import` (URL/fileId input, markdown-only validation). *(scaffold route + file ref validation added; Drive fetch pending)*
+- [ ] Add API: `POST /api/integrations/google-drive/refresh` (pull latest content for linked source).
+- [ ] Add Google Drive URL/fileId parser utility + validation.
+- [ ] Wire OAuth/token retrieval for Drive read access.
+- [ ] UI: "Import from Google Drive" action in dashboard.
+- [ ] UI: "Refresh from Google Drive" action on linked docs.
+- [ ] Add overwrite confirmation + diff preview.
+- [ ] Add audit logging events for import/refresh operations.
+- [ ] End-to-end verification on Vercel with real Drive markdown file.
+
 ## Nice to Have
 - [ ] Improve share flow for recipients who do not yet have accounts (invite + pending access or guided signup), while preserving permission model.

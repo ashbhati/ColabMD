@@ -184,3 +184,60 @@ ColabMD/
 5. **Comments**: Select text → add comment → verify in sidebar → reply → resolve
 6. **Sharing**: Generate share link, open in incognito, verify permission level
 7. **Shared Visibility**: Share a doc to another user and verify it appears in recipient **"Shared with me"** list on homepage
+
+---
+
+## New Requirement: Google Drive Markdown Source Support (Phase 1)
+
+### Product Goal
+Allow users to import and refresh documents in ColabMD from Google Drive files that are already Markdown (`.md` / `text/markdown`) without any Google Docs format conversion.
+
+### Explicit Scope (Phase 1 only)
+- ✅ Support importing Markdown files from Google Drive.
+- ✅ Support manual refresh/pull from Google Drive into an existing ColabMD doc.
+- ✅ Show a diff/confirm step before overwrite.
+- ❌ No native Google Docs conversion (no `application/vnd.google-apps.document` parsing).
+- ❌ No auto background sync.
+- ❌ No push-back to Google Drive in this phase.
+
+### Technical Approach
+1. **Google OAuth (Drive read scope)**
+   - Reuse existing user auth session; add per-user Google access for Drive reads.
+2. **Source linking metadata**
+   - Track source provider and file metadata linked to local doc:
+     - `provider = google_drive`
+     - `external_file_id`
+     - `external_file_name`
+     - `external_modified_time`
+     - `last_pulled_at`
+3. **Import flow**
+   - Input: Google Drive file URL or picker result.
+   - Validate file MIME/extension is markdown-compatible.
+   - Download content and create ColabMD document.
+4. **Refresh flow**
+   - Fetch latest file metadata/content from Drive.
+   - If unchanged, return no-op.
+   - If changed, show patch preview and require confirm before overwrite.
+5. **Safety/permissions**
+   - Import/refresh only for authenticated users.
+   - Respect document ownership/edit permissions for refresh writes.
+
+### Proposed API Surface
+- `POST /api/integrations/google-drive/import`
+  - body: `{ fileUrl?: string, fileId?: string, title?: string }`
+  - creates ColabMD doc + source link metadata.
+- `POST /api/integrations/google-drive/refresh`
+  - body: `{ documentId: string, force?: boolean }`
+  - compares upstream modified time + content; returns diff or writes updated content.
+
+### Data Model Additions (planned)
+- New table: `document_sources`
+  - `id`, `document_id`, `provider`, `external_file_id`, `external_file_name`, `external_modified_time`, `last_pulled_at`, `created_by`, `created_at`, `updated_at`
+
+### Verification Plan (for this feature)
+1. Import markdown file by Drive URL.
+2. Confirm ColabMD document created with exact markdown content.
+3. Confirm source metadata row created.
+4. Edit source file in Drive; run refresh.
+5. Verify diff prompt appears and overwrite updates content.
+6. Verify non-markdown file import is blocked with clear error.
