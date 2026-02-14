@@ -8,6 +8,9 @@
     "start": "next start",
     "lint": "eslint",
     "test": "jest",
+    "test:comments": "jest --runInBand --testPathPatterns=\"comments-system-fixes|comments-workflow|CommentsSidebar|thread-component-props|resolve-button-tooltip|liveblocks-auth-profile-fallback\"",
+    "test:collab": "jest --runInBand --testPathPatterns=\"Avatars|liveblocks-auth|comments-workflow|Editor\"",
+    "test:shared-listing": "jest --runInBand --testPathPatterns=documents-shared-listing",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage"
   },

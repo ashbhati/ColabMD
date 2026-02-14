@@ -75,6 +75,7 @@ export type Database = {
           document_id: string
           user_id: string | null
           share_token: string | null
+          invited_email: string | null
           permission: 'view' | 'edit' | 'comment'
           created_at: string
         }
@@ -83,6 +84,7 @@ export type Database = {
           document_id: string
           user_id?: string | null
           share_token?: string | null
+          invited_email?: string | null
           permission: 'view' | 'edit' | 'comment'
           created_at?: string
         }
@@ -91,6 +93,7 @@ export type Database = {
           document_id?: string
           user_id?: string | null
           share_token?: string | null
+          invited_email?: string | null
           permission?: 'view' | 'edit' | 'comment'
           created_at?: string
         }
@@ -105,6 +108,48 @@ export type Database = {
           {
             foreignKeyName: "document_shares_user_id_fkey"
             columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      document_audit_events: {
+        Row: {
+          id: string
+          document_id: string | null
+          actor_id: string
+          event_type: string
+          metadata: Json
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          document_id?: string | null
+          actor_id: string
+          event_type: string
+          metadata?: Json
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          document_id?: string | null
+          actor_id?: string
+          event_type?: string
+          metadata?: Json
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_audit_events_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_audit_events_actor_id_fkey"
+            columns: ["actor_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]

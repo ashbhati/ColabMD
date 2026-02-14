@@ -3,9 +3,9 @@
 Canonical backlog for implementation tracking.
 
 ## Current Priority Queue
-1. [ ] Test real-time collaboration with multiple users.
-2. [ ] Verify all 4 comment features work in production (Vercel).
-3. [ ] Fix shared document listing E2E validation closure ("Shared with me" checklist + sign-off).
+1. [x] Test real-time collaboration with multiple users.
+2. [x] Verify all 4 comment features work in production (Vercel).
+3. [x] Fix shared document listing E2E validation closure ("Shared with me" checklist + sign-off).
 
 ## Google Drive Markdown Support (Phase 1)
 - [x] Document schema migration for `document_sources` table.
@@ -16,8 +16,8 @@ Canonical backlog for implementation tracking.
 - [x] UI: "Import from Google Drive" action in dashboard.
 - [x] UI: "Refresh from Drive" action on linked docs.
 - [x] End-to-end verification on Vercel with real Drive markdown file.
-- [ ] Add overwrite confirmation + diff preview.
-- [ ] Add audit logging events for import/refresh operations.
+- [x] Add overwrite confirmation + diff preview.
+- [x] Add audit logging events for import/refresh operations.
 
 ## Hardening / Quality
 - [x] Fix unauthenticated `/doc/[id]` infinite loading state.
@@ -27,4 +27,4 @@ Canonical backlog for implementation tracking.
 - [x] Add route-level tests for import/refresh critical paths.
 
 ## Nice to Have
-- [ ] Improve share flow for recipients who do not yet have accounts (invite + pending access or guided signup), while preserving permission model.
+- [x] Improve share flow for recipients who do not yet have accounts (invite + pending access or guided signup), while preserving permission model.

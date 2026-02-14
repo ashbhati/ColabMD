@@ -17,6 +17,7 @@ export default function SharePage() {
   const token = params.token as string
   const [document, setDocument] = useState<SharedDocument | null>(null)
   const [permission, setPermission] = useState<'view' | 'comment' | 'edit' | null>(null)
+  const [invitedEmail, setInvitedEmail] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
 
@@ -41,6 +42,7 @@ export default function SharePage() {
           const data = await response.json()
           setDocument(data.document)
           setPermission(data.permission)
+          setInvitedEmail(data.invitedEmail || null)
           setLoading(false)
           return
         } catch {
@@ -132,6 +134,11 @@ export default function SharePage() {
             <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
               Shared view for guests. Sign in to collaborate.
             </p>
+            {invitedEmail && (
+              <p className="mt-1 text-xs text-amber-600 dark:text-amber-400">
+                Invite is restricted to {invitedEmail}. Sign in with that Google account to collaborate.
+              </p>
+            )}
           </div>
           <div
             className="prose prose-slate dark:prose-invert max-w-none px-8 py-8"

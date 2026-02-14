@@ -15,7 +15,7 @@ export async function GET(request: Request) {
 
     const { data: share, error: shareError } = await supabase
       .from('document_shares')
-      .select('document_id, permission')
+      .select('document_id, permission, invited_email')
       .eq('share_token', token)
       .single()
 
@@ -36,6 +36,7 @@ export async function GET(request: Request) {
     return NextResponse.json({
       document,
       permission: share.permission,
+      invitedEmail: share.invited_email,
     })
   } catch (error) {
     console.error('Error in GET /api/share/access:', error)

@@ -17,6 +17,7 @@ jest.mock('@/lib/google-drive', () => ({
 
 jest.mock('@/lib/markdown', () => ({
   markdownToHtml: jest.fn((s: string) => `<p>${s}</p>`),
+  htmlToMarkdown: jest.fn((s: string) => s.replace(/<[^>]*>/g, '').trim()),
 }))
 
 jest.mock('uuid', () => ({
@@ -84,6 +85,9 @@ describe('google drive integration routes', () => {
       const sourceBuilder = {
         upsert: jest.fn().mockResolvedValue({ error: { message: 'boom' } }),
       }
+      const auditBuilder = {
+        insert: jest.fn().mockResolvedValue({ error: null }),
+      }
 
       ;(createServerSupabaseClient as jest.Mock).mockResolvedValue({
         auth: {
@@ -93,6 +97,7 @@ describe('google drive integration routes', () => {
         from: jest.fn((table: string) => {
           if (table === 'documents') return documentsBuilder
           if (table === 'document_sources') return sourceBuilder
+          if (table === 'document_audit_events') return auditBuilder
           return {}
         }),
       })
@@ -141,6 +146,9 @@ describe('google drive integration routes', () => {
         select: jest.fn().mockReturnValue({ eq: jest.fn().mockReturnValue(sourceSelectEq1) }),
         update: jest.fn().mockReturnValue({ eq: jest.fn().mockResolvedValue({ error: null }) }),
       }
+      const auditBuilder = {
+        insert: jest.fn().mockResolvedValue({ error: null }),
+      }
 
       ;(createServerSupabaseClient as jest.Mock).mockResolvedValue({
         auth: {
@@ -149,6 +157,7 @@ describe('google drive integration routes', () => {
         },
         from: jest.fn((table: string) => {
           if (table === 'document_sources') return sourceBuilder
+          if (table === 'document_audit_events') return auditBuilder
           if (table === 'documents') {
             return { update: jest.fn().mockReturnValue({ eq: jest.fn().mockReturnValue({ eq: jest.fn() }) }) }
           }
@@ -167,6 +176,81 @@ describe('google drive integration routes', () => {
       expect(res.status).toBe(200)
       expect(json).toEqual({ ok: true, unchanged: true })
       expect(fetchGoogleDriveFileContent).not.toHaveBeenCalled()
+    })
+
+    it('returns diff preview and requires confirmation when upstream content changed', async () => {
+      ;(fetchGoogleDriveFileMetadata as jest.Mock).mockResolvedValue({
+        id: 'file-123',
+        name: 'notes.md',
+        mimeType: 'text/markdown',
+        modifiedTime: '2026-02-15T00:00:00Z',
+      })
+      ;(fetchGoogleDriveFileContent as jest.Mock).mockResolvedValue('# updated')
+      ;(isMarkdownMimeType as jest.Mock).mockReturnValue(true)
+      ;(isMarkdownFilename as jest.Mock).mockReturnValue(true)
+
+      const sourceSingle = jest.fn().mockResolvedValue({
+        data: {
+          id: 'src-1',
+          document_id: 'doc-1',
+          provider: 'google_drive',
+          external_file_id: 'file-123',
+          external_modified_time: '2026-02-14T00:00:00Z',
+        },
+        error: null,
+      })
+
+      const sourceSelectEq2 = { single: sourceSingle }
+      const sourceSelectEq1 = { eq: jest.fn().mockReturnValue(sourceSelectEq2) }
+      const sourceBuilder = {
+        select: jest.fn().mockReturnValue({ eq: jest.fn().mockReturnValue(sourceSelectEq1) }),
+        update: jest.fn().mockReturnValue({ eq: jest.fn().mockResolvedValue({ error: null }) }),
+      }
+
+      const documentsBuilder = {
+        select: jest.fn().mockReturnValue({
+          eq: jest.fn().mockReturnValue({
+            eq: jest.fn().mockReturnValue({
+              maybeSingle: jest.fn().mockResolvedValue({
+                data: { content: '<h1>old</h1>' },
+                error: null,
+              }),
+            }),
+          }),
+        }),
+        update: jest.fn().mockReturnValue({ eq: jest.fn().mockReturnValue({ eq: jest.fn() }) }),
+      }
+
+      const auditBuilder = {
+        insert: jest.fn().mockResolvedValue({ error: null }),
+      }
+
+      ;(createServerSupabaseClient as jest.Mock).mockResolvedValue({
+        auth: {
+          getUser: jest.fn().mockResolvedValue({ data: { user: { id: 'user-1' } }, error: null }),
+          getSession: jest.fn().mockResolvedValue({ data: { session: { provider_token: 'token' } } }),
+        },
+        from: jest.fn((table: string) => {
+          if (table === 'document_sources') return sourceBuilder
+          if (table === 'documents') return documentsBuilder
+          if (table === 'document_audit_events') return auditBuilder
+          return {}
+        }),
+      })
+
+      const req = new Request('http://localhost/api/integrations/google-drive/refresh', {
+        method: 'POST',
+        body: JSON.stringify({ documentId: 'doc-1' }),
+      })
+
+      const res = await refreshPost(req)
+      const json = await res.json()
+
+      expect(res.status).toBe(200)
+      expect(json.ok).toBe(true)
+      expect(json.requiresConfirm).toBe(true)
+      expect(json.diffPreview).toBeDefined()
+      expect(documentsBuilder.update).not.toHaveBeenCalled()
     })
   })
 })

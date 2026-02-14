@@ -34,12 +34,22 @@ export async function POST(request: Request) {
     // Find the share by token
     const { data: share, error: shareError } = await adminSupabase
       .from('document_shares')
-      .select('document_id, permission')
+      .select('document_id, permission, invited_email')
       .eq('share_token', token)
       .single()
 
     if (shareError || !share) {
       return NextResponse.json({ error: 'Invalid or expired share link' }, { status: 404 })
+    }
+
+    const normalizedUserEmail = user.email?.toLowerCase() || ''
+    if (share.invited_email && normalizedUserEmail !== share.invited_email.toLowerCase()) {
+      return NextResponse.json(
+        {
+          error: `This invite is restricted to ${share.invited_email}. Sign in with that Google account to continue.`,
+        },
+        { status: 403 }
+      )
     }
 
     // Check if user already has access

@@ -126,6 +126,7 @@ export async function POST(
           id: uuidv4(),
           document_id: id,
           share_token: shareToken,
+          invited_email: null,
           permission,
         })
         .select()
@@ -156,17 +157,45 @@ export async function POST(
       .maybeSingle()
 
     if (!targetUser) {
-      const shareToken = uuidv4()
-      const { data, error } = await adminSupabase
+      const { data: existingInvite } = await adminSupabase
         .from('document_shares')
-        .insert({
-          id: uuidv4(),
-          document_id: id,
-          share_token: shareToken,
-          permission,
-        })
-        .select()
-        .single()
+        .select('id, share_token')
+        .eq('document_id', id)
+        .eq('invited_email', normalizedEmail)
+        .maybeSingle()
+
+      const shareToken = existingInvite?.share_token || uuidv4()
+      let data = existingInvite
+      let error: { message?: string } | null = null
+
+      if (existingInvite) {
+        const result = await adminSupabase
+          .from('document_shares')
+          .update({
+            permission,
+            share_token: shareToken,
+          })
+          .eq('id', existingInvite.id)
+          .select('*')
+          .single()
+        data = result.data
+        error = result.error
+      } else {
+        const result = await adminSupabase
+          .from('document_shares')
+          .insert({
+            id: uuidv4(),
+            document_id: id,
+            user_id: null,
+            share_token: shareToken,
+            invited_email: normalizedEmail,
+            permission,
+          })
+          .select('*')
+          .single()
+        data = result.data
+        error = result.error
+      }
 
       if (error) {
         return NextResponse.json({ error: 'Failed to create share invite' }, { status: 500 })
@@ -214,6 +243,7 @@ export async function POST(
         id: uuidv4(),
         document_id: id,
         user_id: targetUser.id,
+        invited_email: null,
         permission,
       })
       .select('*')

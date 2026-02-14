@@ -7,6 +7,7 @@ interface Share {
   id: string
   user_id: string | null
   share_token: string | null
+  invited_email?: string | null
   permission: 'view' | 'edit' | 'comment'
   profiles?: {
     email: string
@@ -23,6 +24,7 @@ interface ShareModalProps {
 
 export function ShareModal({ documentId, isOpen, onClose }: ShareModalProps) {
   const [shares, setShares] = useState<Share[]>([])
+  const [pendingInvites, setPendingInvites] = useState<Share[]>([])
   const [loading, setLoading] = useState(true)
   const [email, setEmail] = useState('')
   const [permission, setPermission] = useState<'view' | 'edit' | 'comment'>('view')
@@ -46,6 +48,7 @@ export function ShareModal({ documentId, isOpen, onClose }: ShareModalProps) {
       if (response.ok) {
         const data = await response.json()
         setShares(data.filter((s: Share) => s.user_id))
+        setPendingInvites(data.filter((s: Share) => !s.user_id && !!s.invited_email))
         const link = data.find((s: Share) => s.share_token)
         if (link) {
           setLinkShare({ token: link.share_token, permission: link.permission })
@@ -240,7 +243,7 @@ export function ShareModal({ documentId, isOpen, onClose }: ShareModalProps) {
               <div className="flex justify-center py-4">
                 <div className="h-6 w-6 animate-spin rounded-full border-2 border-indigo-600 border-t-transparent" />
               </div>
-            ) : shares.length === 0 ? (
+            ) : shares.length === 0 && pendingInvites.length === 0 ? (
               <p className="text-sm text-slate-500 dark:text-slate-400 text-center py-4">
                 Only you have access to this document
               </p>
@@ -283,6 +286,28 @@ export function ShareModal({ documentId, isOpen, onClose }: ShareModalProps) {
                         </svg>
                       </button>
                     </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {pendingInvites.length > 0 && (
+              <div className="mt-4 space-y-2">
+                <p className="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                  Pending invites
+                </p>
+                {pendingInvites.map((invite) => (
+                  <div
+                    key={invite.id}
+                    className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800 rounded-lg"
+                  >
+                    <div>
+                      <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
+                        {invite.invited_email}
+                      </p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">Awaiting first sign in</p>
+                    </div>
+                    <span className="text-xs text-slate-500 dark:text-slate-400 capitalize">{invite.permission}</span>
                   </div>
                 ))}
               </div>

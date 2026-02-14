@@ -9,6 +9,7 @@ import {
   parseGoogleDriveFileRef,
 } from '@/lib/google-drive'
 import { markdownToHtml } from '@/lib/markdown'
+import { logAuditEvent } from '@/lib/audit'
 
 export async function POST(request: Request) {
   try {
@@ -106,8 +107,32 @@ export async function POST(request: Request) {
         .eq('id', document.id)
         .eq('owner_id', user.id)
 
+      await logAuditEvent({
+        supabase,
+        actorId: user.id,
+        documentId: document.id,
+        eventType: 'drive_import_failed',
+        metadata: {
+          stage: 'source_link',
+          message: sourceError.message,
+          externalFileId: metadata.id,
+        },
+      })
+
       return NextResponse.json({ error: 'Failed to store source link for imported document' }, { status: 500 })
     }
+
+    await logAuditEvent({
+      supabase,
+      actorId: user.id,
+      documentId: document.id,
+      eventType: 'drive_import',
+      metadata: {
+        externalFileId: metadata.id,
+        externalFileName: metadata.name,
+        externalMimeType: metadata.mimeType,
+      },
+    })
 
     return NextResponse.json({
       ok: true,

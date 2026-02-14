@@ -17,6 +17,18 @@ interface Document {
   owner_id: string
 }
 
+interface DriveDiffPreview {
+  added: number
+  removed: number
+  changed: number
+  entries: Array<{
+    line: number
+    before: string
+    after: string
+    kind: 'added' | 'removed' | 'changed'
+  }>
+}
+
 export default function DocumentPage() {
   const params = useParams()
   const router = useRouter()
@@ -31,6 +43,7 @@ export default function DocumentPage() {
   const [isShareModalOpen, setIsShareModalOpen] = useState(false)
   const [isRefreshingSource, setIsRefreshingSource] = useState(false)
   const [externalContentOverride, setExternalContentOverride] = useState<string | null>(null)
+  const [refreshPreview, setRefreshPreview] = useState<DriveDiffPreview | null>(null)
 
   useEffect(() => {
     async function fetchDocument() {
@@ -82,15 +95,64 @@ export default function DocumentPage() {
   const handleRefreshFromGoogleDrive = async () => {
     setIsRefreshingSource(true)
     try {
-      const refreshRes = await fetch('/api/integrations/google-drive/refresh', {
+      const previewRes = await fetch('/api/integrations/google-drive/refresh', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ documentId }),
       })
 
-      const refreshData = await refreshRes.json()
-      if (!refreshRes.ok) {
-        throw new Error(refreshData?.error || 'Refresh failed')
+      const previewData = await previewRes.json()
+      if (!previewRes.ok) {
+        throw new Error(previewData?.error || 'Refresh failed')
+      }
+
+      if (previewData?.unchanged) {
+        alert('No changes found in Google Drive source file.')
+        return
+      }
+
+      if (previewData?.requiresConfirm && previewData?.diffPreview) {
+        setRefreshPreview(previewData.diffPreview)
+        return
+      }
+
+      const applyRes = await fetch('/api/integrations/google-drive/refresh', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ documentId, force: true }),
+      })
+      const applyData = await applyRes.json()
+      if (!applyRes.ok) {
+        throw new Error(applyData?.error || 'Refresh failed')
+      }
+
+      const latestRes = await fetch(`/api/documents/${documentId}`)
+      if (latestRes.ok) {
+        const latestDoc = await latestRes.json()
+        setDocument(latestDoc)
+        setExternalContentOverride(latestDoc.content || '')
+      }
+      alert('Document refreshed from Google Drive.')
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unknown error'
+      alert(`Refresh failed: ${message}`)
+    } finally {
+      setIsRefreshingSource(false)
+    }
+  }
+
+  const handleConfirmDriveOverwrite = async () => {
+    setIsRefreshingSource(true)
+    try {
+      const applyRes = await fetch('/api/integrations/google-drive/refresh', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ documentId, force: true }),
+      })
+
+      const applyData = await applyRes.json()
+      if (!applyRes.ok) {
+        throw new Error(applyData?.error || 'Refresh failed')
       }
 
       const latestRes = await fetch(`/api/documents/${documentId}`)
@@ -100,11 +162,8 @@ export default function DocumentPage() {
         setExternalContentOverride(latestDoc.content || '')
       }
 
-      if (refreshData?.unchanged) {
-        alert('No changes found in Google Drive source file.')
-      } else {
-        alert('Document refreshed from Google Drive.')
-      }
+      setRefreshPreview(null)
+      alert('Document refreshed from Google Drive.')
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unknown error'
       alert(`Refresh failed: ${message}`)
@@ -256,6 +315,52 @@ export default function DocumentPage() {
           isOpen={isShareModalOpen}
           onClose={() => setIsShareModalOpen(false)}
         />
+
+        {refreshPreview && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center">
+            <div className="absolute inset-0 bg-black/50" onClick={() => setRefreshPreview(null)} />
+            <div className="relative w-full max-w-2xl rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xl mx-4">
+              <div className="border-b border-slate-200 dark:border-slate-800 px-5 py-4">
+                <h3 className="text-base font-semibold text-slate-900 dark:text-slate-100">Confirm overwrite from Google Drive</h3>
+                <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                  {refreshPreview.added} added, {refreshPreview.removed} removed, {refreshPreview.changed} changed lines.
+                </p>
+              </div>
+
+              <div className="max-h-[50vh] overflow-y-auto p-5 space-y-2">
+                {refreshPreview.entries.length === 0 ? (
+                  <p className="text-sm text-slate-500 dark:text-slate-400">No line-level diff preview available.</p>
+                ) : (
+                  refreshPreview.entries.map((entry) => (
+                    <div key={`${entry.line}-${entry.kind}`} className="rounded-md border border-slate-200 dark:border-slate-700 p-3">
+                      <p className="text-xs font-medium text-slate-500 dark:text-slate-400">
+                        Line {entry.line} • {entry.kind}
+                      </p>
+                      <p className="mt-1 text-xs text-red-600 dark:text-red-400 whitespace-pre-wrap">{entry.before || '(empty)'}</p>
+                      <p className="mt-1 text-xs text-emerald-600 dark:text-emerald-400 whitespace-pre-wrap">{entry.after || '(empty)'}</p>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              <div className="flex items-center justify-end gap-2 border-t border-slate-200 dark:border-slate-800 px-5 py-4">
+                <button
+                  onClick={() => setRefreshPreview(null)}
+                  className="rounded-md border border-slate-300 dark:border-slate-700 px-3 py-1.5 text-sm text-slate-700 dark:text-slate-200"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleConfirmDriveOverwrite}
+                  disabled={isRefreshingSource}
+                  className="rounded-md bg-emerald-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-emerald-500 disabled:opacity-50"
+                >
+                  {isRefreshingSource ? 'Applying...' : 'Overwrite from Drive'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         <main className="mx-auto max-w-5xl px-4 py-6">
           <ClientSideSuspense fallback={

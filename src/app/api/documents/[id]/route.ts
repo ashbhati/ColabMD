@@ -17,6 +17,7 @@ interface ShareRow {
   document_id: string
   user_id: string | null
   share_token: string | null
+  invited_email: string | null
   permission: 'view' | 'edit' | 'comment'
   created_at: string
 }
@@ -78,12 +79,13 @@ export async function GET(
 
         const { data: tokenShare } = await adminSupabase
           .from('document_shares')
-          .select('id')
+          .select('id, invited_email')
           .eq('document_id', id)
           .eq('share_token', shareToken)
           .maybeSingle()
 
-        if (!tokenShare) {
+        const normalizedUserEmail = user.email?.toLowerCase() || ''
+        if (!tokenShare || (tokenShare.invited_email && tokenShare.invited_email.toLowerCase() !== normalizedUserEmail)) {
           return NextResponse.json({ error: 'Access denied' }, { status: 403 })
         }
       }
@@ -153,13 +155,15 @@ export async function PATCH(
         if (shareToken) {
           const { data: tokenShare } = await adminSupabase
             .from('document_shares')
-            .select('permission')
+            .select('permission, invited_email')
             .eq('document_id', id)
             .eq('share_token', shareToken)
             .maybeSingle()
 
+          const normalizedUserEmail = user.email?.toLowerCase() || ''
+          const inviteMatches = !tokenShare?.invited_email || tokenShare.invited_email.toLowerCase() === normalizedUserEmail
           const tokenPermission = (tokenShare as Pick<ShareRow, 'permission'> | null)?.permission
-          canEdit = tokenPermission === 'edit'
+          canEdit = inviteMatches && tokenPermission === 'edit'
         }
       }
     }

@@ -86,12 +86,15 @@ export async function POST(request: Request) {
       if (shareToken) {
         const { data: tokenShare } = await adminSupabase
           .from("document_shares")
-          .select("permission")
+          .select("permission, invited_email")
           .eq("document_id", documentId)
           .eq("share_token", shareToken)
           .maybeSingle();
 
-        if (tokenShare) {
+        const normalizedUserEmail = user.email?.toLowerCase() || "";
+        const inviteMatches = !tokenShare?.invited_email || tokenShare.invited_email.toLowerCase() === normalizedUserEmail;
+
+        if (tokenShare && inviteMatches) {
           canAccess = true;
           permission = tokenShare.permission === "edit" ? "write" : tokenShare.permission === "comment" ? "comment" : "read";
         }

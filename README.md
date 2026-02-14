@@ -79,6 +79,12 @@ For the OAuth client used by Supabase Google provider:
 
 Repo includes unit and route-level tests for Drive utilities and import/refresh behavior.
 
+Focused regression commands:
+
+- `npm run test:collab` - multi-user collaboration/presence smoke tests
+- `npm run test:comments` - all 4 comment-feature regressions
+- `npm run test:shared-listing` - "Shared with me" listing closure checks
+
 If `npm test` fails with `'jest' is not recognized`, ensure dependencies are fully installed in your environment and `node_modules/.bin` is available.
 
 ## Deployment

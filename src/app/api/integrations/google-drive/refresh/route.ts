@@ -6,7 +6,9 @@ import {
   isMarkdownFilename,
   isMarkdownMimeType,
 } from '@/lib/google-drive'
-import { markdownToHtml } from '@/lib/markdown'
+import { htmlToMarkdown, markdownToHtml } from '@/lib/markdown'
+import { buildLineDiffPreview } from '@/lib/diff'
+import { logAuditEvent } from '@/lib/audit'
 
 export async function POST(request: Request) {
   try {
@@ -66,6 +68,42 @@ export async function POST(request: Request) {
 
     const markdown = await fetchGoogleDriveFileContent(source.external_file_id, accessToken)
     const html = markdownToHtml(markdown)
+    const { data: currentDocument } = await supabase
+      .from('documents')
+      .select('content')
+      .eq('id', documentId)
+      .eq('owner_id', user.id)
+      .maybeSingle()
+
+    const currentMarkdown = htmlToMarkdown(currentDocument?.content || '')
+    const diffPreview = buildLineDiffPreview(currentMarkdown, markdown)
+    const contentChanged = diffPreview.added + diffPreview.removed + diffPreview.changed > 0
+
+    if (!body?.force) {
+      await logAuditEvent({
+        supabase,
+        actorId: user.id,
+        documentId,
+        eventType: 'drive_refresh_preview',
+        metadata: {
+          sourceModifiedTime: metadata.modifiedTime,
+          unchanged,
+          contentChanged,
+          diffSummary: {
+            added: diffPreview.added,
+            removed: diffPreview.removed,
+            changed: diffPreview.changed,
+          },
+        },
+      })
+
+      return NextResponse.json({
+        ok: true,
+        unchanged: unchanged && !contentChanged,
+        requiresConfirm: contentChanged,
+        diffPreview,
+      })
+    }
 
     const { error: updateDocError } = await supabase
       .from('documents')
@@ -77,6 +115,16 @@ export async function POST(request: Request) {
       .eq('owner_id', user.id)
 
     if (updateDocError) {
+      await logAuditEvent({
+        supabase,
+        actorId: user.id,
+        documentId,
+        eventType: 'drive_refresh_failed',
+        metadata: {
+          stage: 'document_update',
+          message: updateDocError.message,
+        },
+      })
       return NextResponse.json({ error: 'Failed to update local document from source' }, { status: 500 })
     }
 
@@ -94,7 +142,22 @@ export async function POST(request: Request) {
       console.error('Failed to update document source metadata:', updateSourceError)
     }
 
-    return NextResponse.json({ ok: true, unchanged: false })
+    await logAuditEvent({
+      supabase,
+      actorId: user.id,
+      documentId,
+      eventType: 'drive_refresh_applied',
+      metadata: {
+        sourceModifiedTime: metadata.modifiedTime,
+        diffSummary: {
+          added: diffPreview.added,
+          removed: diffPreview.removed,
+          changed: diffPreview.changed,
+        },
+      },
+    })
+
+    return NextResponse.json({ ok: true, unchanged: false, applied: true })
   } catch (error) {
     console.error('Error in POST /api/integrations/google-drive/refresh:', error)
     const message = error instanceof Error ? error.message : 'Internal server error'
