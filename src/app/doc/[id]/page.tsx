@@ -58,8 +58,14 @@ export default function DocumentPage() {
 
     if (user && documentId) {
       fetchDocument()
+      return
     }
-  }, [user, documentId])
+
+    if (!authLoading && !user) {
+      setLoading(false)
+      router.push(`/login?next=${encodeURIComponent(`/doc/${documentId}`)}`)
+    }
+  }, [user, authLoading, documentId, router])
 
   const handleSaveContent = useCallback(async (content: string) => {
     try {

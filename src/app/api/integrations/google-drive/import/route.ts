@@ -98,7 +98,15 @@ export async function POST(request: Request) {
 
     if (sourceError) {
       console.error('Failed to persist source metadata:', sourceError)
-      return NextResponse.json({ error: 'Document created, but failed to store source link' }, { status: 500 })
+
+      // Best-effort rollback to avoid partial success (document created without source link)
+      await supabase
+        .from('documents')
+        .delete()
+        .eq('id', document.id)
+        .eq('owner_id', user.id)
+
+      return NextResponse.json({ error: 'Failed to store source link for imported document' }, { status: 500 })
     }
 
     return NextResponse.json({

@@ -23,7 +23,14 @@ export function parseGoogleDriveFileRef(input: { fileUrl?: string; fileId?: stri
   try {
     const url = new URL(rawUrl)
 
-    if (!url.hostname.includes('google.com') && !url.hostname.includes('googleusercontent.com')) {
+    const host = url.hostname.toLowerCase()
+    const allowedHosts = ['drive.google.com', 'docs.google.com', 'googleusercontent.com']
+    const isAllowedHost =
+      allowedHosts.includes(host) ||
+      host.endsWith('.google.com') ||
+      host.endsWith('.googleusercontent.com')
+
+    if (!isAllowedHost) {
       return null
     }
 
