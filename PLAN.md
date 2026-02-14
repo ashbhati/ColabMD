@@ -195,7 +195,7 @@ Allow users to import and refresh documents in ColabMD from Google Drive files t
 ### Explicit Scope (Phase 1 only)
 - ✅ Support importing Markdown files from Google Drive.
 - ✅ Support manual refresh/pull from Google Drive into an existing ColabMD doc.
-- ✅ Show a diff/confirm step before overwrite.
+- ❌ Show a diff/confirm step before overwrite. *(planned next)*
 - ❌ No native Google Docs conversion (no `application/vnd.google-apps.document` parsing).
 - ❌ No auto background sync.
 - ❌ No push-back to Google Drive in this phase.
@@ -235,9 +235,20 @@ Allow users to import and refresh documents in ColabMD from Google Drive files t
   - `id`, `document_id`, `provider`, `external_file_id`, `external_file_name`, `external_modified_time`, `last_pulled_at`, `created_by`, `created_at`, `updated_at`
 
 ### Verification Plan (for this feature)
-1. Import markdown file by Drive URL.
-2. Confirm ColabMD document created with exact markdown content.
-3. Confirm source metadata row created.
-4. Edit source file in Drive; run refresh.
-5. Verify diff prompt appears and overwrite updates content.
-6. Verify non-markdown file import is blocked with clear error.
+1. ✅ Import markdown file by Drive URL.
+2. ✅ Confirm ColabMD document created with exact markdown content.
+3. ✅ Confirm source metadata row created.
+4. ✅ Edit source file in Drive; run refresh.
+5. ⏳ Add/verify diff prompt before overwrite.
+6. ✅ Verify non-markdown file import is blocked with clear error.
+
+### Implemented Capabilities (latest)
+- Dashboard button: **Import from Google Drive**.
+- In-doc button: **Refresh from Drive**.
+- Backend import and refresh APIs fully wired for markdown files.
+- `document_sources` schema + RLS migration created and applied.
+- Google OAuth flow updated to request Drive readonly scope.
+- Import endpoint now does best-effort rollback when source-link persistence fails.
+- `/doc/[id]` unauthenticated loading bug fixed (redirects to login with next path).
+- Drive URL parser hardened against deceptive hostnames.
+- Added Drive utility and route-level test coverage (import/refresh critical flows).
