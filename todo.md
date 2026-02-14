@@ -12,7 +12,7 @@ This is the canonical backlog file for ColabMD.
 - [ ] Verify all 4 comment features work in production (Vercel).
 
 ## New Feature Track: Google Drive Markdown Support (Phase 1)
-- [ ] Document schema migration for `document_sources` table. *(migration SQL added at `migrations/2026-02-13_document_sources.sql`; needs apply in Supabase)*
+- [x] Document schema migration for `document_sources` table.
 - [x] Add API: `POST /api/integrations/google-drive/import` (URL/fileId input, markdown-only validation).
 - [x] Add API: `POST /api/integrations/google-drive/refresh` (pull latest content for linked source).
 - [x] Add Google Drive URL/fileId parser utility + validation.
