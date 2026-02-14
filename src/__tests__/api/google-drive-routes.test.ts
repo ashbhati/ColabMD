@@ -1,3 +1,5 @@
+/** @jest-environment node */
+
 import { POST as importPost } from '@/app/api/integrations/google-drive/import/route'
 import { POST as refreshPost } from '@/app/api/integrations/google-drive/refresh/route'
 
