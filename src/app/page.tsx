@@ -30,6 +30,7 @@ export default function Dashboard() {
   const [isLoading, setIsLoading] = useState(true)
   const [isCreating, setIsCreating] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
+  const [isImportingDrive, setIsImportingDrive] = useState(false)
 
   const fetchDocuments = useCallback(async () => {
     try {
@@ -129,8 +130,36 @@ export default function Dashboard() {
       router.push(`/doc/${doc.id}`)
     } catch (error) {
       console.error('Failed to upload markdown:', error)
+      alert('Failed to upload markdown file.')
     } finally {
       setIsUploading(false)
+    }
+  }
+
+  const handleImportFromGoogleDrive = async () => {
+    const fileUrl = prompt('Paste a Google Drive file URL for a markdown (.md/.markdown) file')
+    if (!fileUrl) return
+
+    setIsImportingDrive(true)
+    try {
+      const response = await fetch('/api/integrations/google-drive/import', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fileUrl }),
+      })
+
+      const data = await response.json()
+      if (!response.ok || !data?.documentId) {
+        throw new Error(data?.error || 'Failed to import from Google Drive')
+      }
+
+      router.push(`/doc/${data.documentId}`)
+    } catch (error) {
+      console.error('Failed to import from Google Drive:', error)
+      const message = error instanceof Error ? error.message : 'Unknown error'
+      alert(`Google Drive import failed: ${message}`)
+    } finally {
+      setIsImportingDrive(false)
     }
   }
 
@@ -211,10 +240,12 @@ export default function Dashboard() {
           shared={documents.shared}
           onCreateDocument={handleCreateDocument}
           onUploadMarkdown={handleUploadMarkdown}
+          onImportFromGoogleDrive={handleImportFromGoogleDrive}
           onDeleteDocument={handleDeleteDocument}
           onRenameDocument={handleRenameDocument}
           isCreating={isCreating}
           isUploading={isUploading}
+          isImportingDrive={isImportingDrive}
         />
       </main>
     </div>

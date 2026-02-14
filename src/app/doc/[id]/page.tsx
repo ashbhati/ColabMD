@@ -29,6 +29,8 @@ export default function DocumentPage() {
   const [title, setTitle] = useState('')
   const [isEditingTitle, setIsEditingTitle] = useState(false)
   const [isShareModalOpen, setIsShareModalOpen] = useState(false)
+  const [isRefreshingSource, setIsRefreshingSource] = useState(false)
+  const [externalContentOverride, setExternalContentOverride] = useState<string | null>(null)
 
   useEffect(() => {
     async function fetchDocument() {
@@ -70,6 +72,40 @@ export default function DocumentPage() {
       console.error('Failed to save document:', error)
     }
   }, [documentId])
+
+  const handleRefreshFromGoogleDrive = async () => {
+    setIsRefreshingSource(true)
+    try {
+      const refreshRes = await fetch('/api/integrations/google-drive/refresh', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ documentId }),
+      })
+
+      const refreshData = await refreshRes.json()
+      if (!refreshRes.ok) {
+        throw new Error(refreshData?.error || 'Refresh failed')
+      }
+
+      const latestRes = await fetch(`/api/documents/${documentId}`)
+      if (latestRes.ok) {
+        const latestDoc = await latestRes.json()
+        setDocument(latestDoc)
+        setExternalContentOverride(latestDoc.content || '')
+      }
+
+      if (refreshData?.unchanged) {
+        alert('No changes found in Google Drive source file.')
+      } else {
+        alert('Document refreshed from Google Drive.')
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unknown error'
+      alert(`Refresh failed: ${message}`)
+    } finally {
+      setIsRefreshingSource(false)
+    }
+  }
 
   const handleSaveTitle = async () => {
     if (!title.trim()) {
@@ -185,15 +221,25 @@ export default function DocumentPage() {
               </ClientSideSuspense>
 
               {document.owner_id === user?.id && (
-                <button
-                  onClick={() => setIsShareModalOpen(true)}
-                  className="flex items-center gap-1.5 rounded-md bg-indigo-600 px-2.5 py-1.5 text-xs font-medium text-white hover:bg-indigo-500 transition-colors"
-                >
-                  <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
-                  </svg>
-                  Share
-                </button>
+                <>
+                  <button
+                    onClick={handleRefreshFromGoogleDrive}
+                    disabled={isRefreshingSource}
+                    className="flex items-center gap-1.5 rounded-md bg-emerald-600 px-2.5 py-1.5 text-xs font-medium text-white hover:bg-emerald-500 disabled:opacity-50 transition-colors"
+                  >
+                    {isRefreshingSource ? 'Refreshing...' : 'Refresh from Drive'}
+                  </button>
+
+                  <button
+                    onClick={() => setIsShareModalOpen(true)}
+                    className="flex items-center gap-1.5 rounded-md bg-indigo-600 px-2.5 py-1.5 text-xs font-medium text-white hover:bg-indigo-500 transition-colors"
+                  >
+                    <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+                    </svg>
+                    Share
+                  </button>
+                </>
               )}
             </div>
           </div>
@@ -217,6 +263,7 @@ export default function DocumentPage() {
             <Editor
               documentId={documentId}
               initialContent={document.content || ''}
+              externalContentOverride={externalContentOverride}
               onSave={handleSaveContent}
             />
           </ClientSideSuspense>
