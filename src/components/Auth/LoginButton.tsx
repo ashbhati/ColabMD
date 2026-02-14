@@ -24,6 +24,11 @@ export function LoginButton({ redirectTo = '/', className }: LoginButtonProps) {
       provider: 'google',
       options: {
         redirectTo: `${window.location.origin}/auth/callback?next=${safeRedirect}`,
+        scopes: 'openid email profile https://www.googleapis.com/auth/drive.readonly',
+        queryParams: {
+          access_type: 'offline',
+          prompt: 'consent',
+        },
       },
     })
   }
