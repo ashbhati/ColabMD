@@ -1,4 +1,5 @@
-import { Json } from '@/types/database'
+import { SupabaseClient } from '@supabase/supabase-js'
+import { Database, Json } from '@/types/database'
 
 export type AuditEventType =
   | 'drive_import'
@@ -8,11 +9,7 @@ export type AuditEventType =
   | 'drive_refresh_failed'
 
 interface LogAuditEventInput {
-  supabase: {
-    from: (table: string) => {
-      insert: (value: Record<string, unknown>) => Promise<{ error: { message?: string } | null }>
-    }
-  }
+  supabase: Pick<SupabaseClient<Database>, 'from'>
   actorId: string
   eventType: AuditEventType
   documentId?: string | null
