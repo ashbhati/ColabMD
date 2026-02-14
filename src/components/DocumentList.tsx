@@ -21,10 +21,12 @@ interface DocumentListProps {
   shared: Document[]
   onCreateDocument: () => Promise<void>
   onUploadMarkdown: (file: File) => Promise<void>
+  onImportFromGoogleDrive: () => Promise<void>
   onDeleteDocument: (id: string) => Promise<void>
   onRenameDocument: (id: string, newTitle: string) => Promise<void>
   isCreating?: boolean
   isUploading?: boolean
+  isImportingDrive?: boolean
 }
 
 export function DocumentList({
@@ -32,10 +34,12 @@ export function DocumentList({
   shared,
   onCreateDocument,
   onUploadMarkdown,
+  onImportFromGoogleDrive,
   onDeleteDocument,
   onRenameDocument,
   isCreating,
   isUploading,
+  isImportingDrive,
 }: DocumentListProps) {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editTitle, setEditTitle] = useState('')
@@ -208,6 +212,29 @@ export function DocumentList({
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1M12 4v12m0-12l-3 3m3-3l3 3" />
                 </svg>
                 Upload Markdown
+              </>
+            )}
+          </button>
+
+          <button
+            onClick={onImportFromGoogleDrive}
+            disabled={!!isImportingDrive}
+            className="flex items-center gap-2 rounded-lg bg-emerald-600 px-3.5 py-2 text-sm font-medium text-white transition-all duration-150 hover:bg-emerald-500 disabled:opacity-50"
+          >
+            {isImportingDrive ? (
+              <>
+                <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                </svg>
+                Importing...
+              </>
+            ) : (
+              <>
+                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M12 12l0 9m0 0l-3-3m3 3l3-3" />
+                </svg>
+                Import from Drive (.md)
               </>
             )}
           </button>

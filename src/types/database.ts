@@ -111,6 +111,63 @@ export type Database = {
           }
         ]
       }
+      document_sources: {
+        Row: {
+          id: string
+          document_id: string
+          provider: string
+          external_file_id: string
+          external_file_name: string | null
+          external_mime_type: string | null
+          external_modified_time: string | null
+          last_pulled_at: string | null
+          created_by: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          document_id: string
+          provider: string
+          external_file_id: string
+          external_file_name?: string | null
+          external_mime_type?: string | null
+          external_modified_time?: string | null
+          last_pulled_at?: string | null
+          created_by: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          document_id?: string
+          provider?: string
+          external_file_id?: string
+          external_file_name?: string | null
+          external_mime_type?: string | null
+          external_modified_time?: string | null
+          last_pulled_at?: string | null
+          created_by?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_sources_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_sources_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
     }
     Views: {
       [_ in never]: never
