@@ -16,10 +16,12 @@ interface EditorProps {
   documentId?: string
   /** Initial HTML content hydrated from Supabase */
   initialContent?: string
+  /** Explicit external content sync (e.g., Google Drive refresh) */
+  externalContentOverride?: string | null
   onSave?: (content: string) => void
 }
 
-export function Editor({ initialContent = '', onSave }: EditorProps) {
+export function Editor({ initialContent = '', externalContentOverride = null, onSave }: EditorProps) {
   const liveblocks = useLiveblocksExtension()
   const { threads } = useThreads()
   const [isSaving, setIsSaving] = useState(false)
@@ -100,6 +102,16 @@ export function Editor({ initialContent = '', onSave }: EditorProps) {
 
     hasHydratedInitialContent.current = true
   }, [editor, initialContent])
+
+  // Force apply externally refreshed content (e.g., Drive refresh)
+  useEffect(() => {
+    if (!editor || !externalContentOverride) return
+
+    editor.commands.setContent(externalContentOverride, { emitUpdate: true })
+    const syncedMarkdown = htmlToMarkdown(externalContentOverride)
+    setMarkdownContent(syncedMarkdown)
+    lastSyncedMarkdownRef.current = syncedMarkdown
+  }, [editor, externalContentOverride])
 
   // View mode toggle handler
   const handleViewModeChange = useCallback((newMode: 'wysiwyg' | 'markdown') => {
