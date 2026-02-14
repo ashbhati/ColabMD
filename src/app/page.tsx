@@ -7,6 +7,7 @@ import { Header } from '@/components/Header'
 import { DocumentList } from '@/components/DocumentList'
 import { LoginButton } from '@/components/Auth'
 import { markdownToHtml } from '@/lib/markdown'
+import { openGoogleDriveMarkdownPicker } from '@/lib/google-picker'
 
 interface Document {
   id: string
@@ -21,7 +22,7 @@ interface Document {
 }
 
 export default function Dashboard() {
-  const { user, loading } = useAuth()
+  const { user, loading, session } = useAuth()
   const router = useRouter()
   const [documents, setDocuments] = useState<{ owned: Document[]; shared: Document[] }>({
     owned: [],
@@ -137,15 +138,34 @@ export default function Dashboard() {
   }
 
   const handleImportFromGoogleDrive = async () => {
-    const fileUrl = prompt('Paste a Google Drive file URL for a markdown (.md/.markdown) file')
-    if (!fileUrl) return
+    const accessToken = session?.provider_token
+    if (!accessToken) {
+      alert('Google session token not found. Please sign out and sign in with Google again.')
+      return
+    }
+
+    const pickerApiKey = process.env.NEXT_PUBLIC_GOOGLE_API_KEY
+    if (!pickerApiKey) {
+      alert('Google Picker is not configured. Missing NEXT_PUBLIC_GOOGLE_API_KEY.')
+      return
+    }
 
     setIsImportingDrive(true)
     try {
+      const picked = await openGoogleDriveMarkdownPicker({
+        accessToken,
+        apiKey: pickerApiKey,
+        appId: process.env.NEXT_PUBLIC_GOOGLE_APP_ID,
+      })
+
+      if (!picked) {
+        return
+      }
+
       const response = await fetch('/api/integrations/google-drive/import', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fileUrl }),
+        body: JSON.stringify({ fileId: picked.fileId }),
       })
 
       const data = await response.json()

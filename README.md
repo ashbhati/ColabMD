@@ -44,6 +44,8 @@ Set these in local `.env.local` and in Vercel:
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 - `SUPABASE_SERVICE_ROLE_KEY`
 - `NEXT_PUBLIC_APP_URL`
+- `NEXT_PUBLIC_GOOGLE_API_KEY` (required for Google Picker UI)
+- `NEXT_PUBLIC_GOOGLE_APP_ID` (optional but recommended for Google Picker)
 - `LIVEBLOCKS_SECRET_KEY`
 - `AI_AGENT_API_KEY` (if AI comment-agent flow is enabled)
 
