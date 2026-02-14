@@ -21,7 +21,7 @@ This is the canonical backlog file for ColabMD.
 - [ ] UI: "Refresh from Google Drive" action on linked docs.
 - [ ] Add overwrite confirmation + diff preview.
 - [ ] Add audit logging events for import/refresh operations.
-- [ ] End-to-end verification on Vercel with real Drive markdown file.
+- [x] End-to-end verification on Vercel with real Drive markdown file.
 
 ## Nice to Have
 - [ ] Improve share flow for recipients who do not yet have accounts (invite + pending access or guided signup), while preserving permission model.
