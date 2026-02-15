@@ -3,43 +3,61 @@ type PickerSelection = {
   name: string
 }
 
+type PickerAction = 'picked' | 'cancel'
+
+interface PickerDocument {
+  id?: string
+  name?: string
+}
+
+interface PickerResponseData {
+  action?: PickerAction
+  docs?: PickerDocument[]
+}
+
+interface GoogleDocsView {
+  setIncludeFolders: (enabled: boolean) => GoogleDocsView
+  setSelectFolderEnabled: (enabled: boolean) => GoogleDocsView
+  setMimeTypes: (mimeTypes: string) => GoogleDocsView
+  setQuery: (query: string) => GoogleDocsView
+}
+
+interface GooglePickerInstance {
+  setVisible: (visible: boolean) => void
+}
+
+interface GooglePickerBuilder {
+  addView: (view: GoogleDocsView) => GooglePickerBuilder
+  setOAuthToken: (token: string) => GooglePickerBuilder
+  setDeveloperKey: (key: string) => GooglePickerBuilder
+  setAppId: (appId: string) => GooglePickerBuilder
+  setCallback: (callback: (data: PickerResponseData) => void) => GooglePickerBuilder
+  build: () => GooglePickerInstance
+}
+
+interface GooglePickerNamespace {
+  Action: {
+    PICKED: PickerAction
+    CANCEL: PickerAction
+  }
+  Document: {
+    ID: 'id'
+    NAME: 'name'
+  }
+  ViewId: {
+    DOCS: string
+  }
+  DocsView: new (viewId: string) => GoogleDocsView
+  PickerBuilder: new () => GooglePickerBuilder
+}
+
 declare global {
   interface Window {
     gapi?: {
       load: (module: string, options: { callback: () => void; onerror?: () => void }) => void
     }
     google?: {
-      picker?: {
-        Action: {
-          PICKED: string
-          CANCEL: string
-        }
-        Response: {
-          ACTION: string
-          DOCUMENTS: string
-        }
-        Document: {
-          ID: string
-          NAME: string
-        }
-        ViewId: {
-          DOCS: string
-        }
-        DocsView: new (viewId: string) => {
-          setIncludeFolders: (enabled: boolean) => void
-          setSelectFolderEnabled: (enabled: boolean) => void
-          setMimeTypes: (mimeTypes: string) => void
-          setQuery: (query: string) => void
-        }
-        PickerBuilder: new () => {
-          addView: (view: unknown) => unknown
-          setOAuthToken: (token: string) => unknown
-          setDeveloperKey: (key: string) => unknown
-          setAppId: (appId: string) => unknown
-          setCallback: (callback: (data: Record<string, unknown>) => void) => unknown
-          build: () => { setVisible: (visible: boolean) => void }
-        }
-      }
+      picker?: GooglePickerNamespace
     }
   }
 }
@@ -131,10 +149,10 @@ export async function openGoogleDriveMarkdownPicker(options: {
       .setOAuthToken(accessToken)
       .setDeveloperKey(apiKey)
       .setCallback((data) => {
-        const action = data[picker.Response.ACTION] as string | undefined
+        const action = data.action
 
         if (action === picker.Action.PICKED) {
-          const docs = (data[picker.Response.DOCUMENTS] as Record<string, unknown>[] | undefined) || []
+          const docs = data.docs || []
           const first = docs[0]
           const fileId = first?.[picker.Document.ID]
           const name = first?.[picker.Document.NAME]
