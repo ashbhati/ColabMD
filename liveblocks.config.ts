@@ -31,6 +31,7 @@ export type Presence = {
   cursor: { x: number; y: number } | null;
   name: string;
   color: string;
+  lastActiveAt?: number;
   isAI?: boolean;
   aiStatus?: 'idle' | 'analyzing' | 'commenting' | 'reviewing';
 };

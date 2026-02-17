@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation'
 import { RoomProvider } from '../../../../liveblocks.config'
 import { ClientSideSuspense } from '@liveblocks/react'
 import { Editor } from '@/components/Editor'
-import { Avatars } from '@/components/Presence'
+import { Avatars, PresenceHeartbeat } from '@/components/Presence'
 import { Header } from '@/components/Header'
 import { useAuth } from '@/components/Auth'
 import { ShareModal } from '@/components/ShareModal'
@@ -238,9 +238,14 @@ export default function DocumentPage() {
         cursor: null,
         name: user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Anonymous',
         color: '#6366f1',
+        lastActiveAt: Date.now(),
       }}
     >
       <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
+        <ClientSideSuspense fallback={null}>
+          <PresenceHeartbeat />
+        </ClientSideSuspense>
+
         <header className="sticky top-0 z-40 border-b border-slate-200 dark:border-slate-800 bg-white/95 dark:bg-slate-900/95 backdrop-blur-sm">
           <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
             <div className="flex items-center gap-3">

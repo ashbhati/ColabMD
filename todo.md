@@ -28,3 +28,10 @@ Canonical backlog for implementation tracking.
 
 ## Nice to Have
 - [x] Improve share flow for recipients who do not yet have accounts (invite + pending access or guided signup), while preserving permission model.
+
+## Upcoming Priority Queue
+1. [x] Collaboration UX upgrades (presence names/colors + active state).
+2. [x] E2E reliability coverage (share-link accept + multi-user sync).
+3. [x] Performance pass (editor mount/switch profiling + targeted fixes).
+4. [x] Share UX v2 (pending invites, resend/cancel).
+5. [x] Drive import UX polish (progress/errors/retry).

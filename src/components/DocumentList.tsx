@@ -27,6 +27,11 @@ interface DocumentListProps {
   isCreating?: boolean
   isUploading?: boolean
   isImportingDrive?: boolean
+  driveImportMessage?: string | null
+  driveImportMessageType?: 'info' | 'success' | 'error'
+  canRetryDriveImport?: boolean
+  onRetryDriveImport?: () => Promise<void>
+  onDismissDriveImportMessage?: () => void
 }
 
 export function DocumentList({
@@ -40,6 +45,11 @@ export function DocumentList({
   isCreating,
   isUploading,
   isImportingDrive,
+  driveImportMessage,
+  driveImportMessageType = 'info',
+  canRetryDriveImport,
+  onRetryDriveImport,
+  onDismissDriveImportMessage,
 }: DocumentListProps) {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editTitle, setEditTitle] = useState('')
@@ -263,6 +273,38 @@ export function DocumentList({
           </button>
         </div>
       </div>
+
+      {driveImportMessage && (
+        <div
+          className={cn(
+            'flex items-center justify-between gap-2 rounded-lg border px-3 py-2 text-sm',
+            driveImportMessageType === 'error' && 'border-red-200 bg-red-50 text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300',
+            driveImportMessageType === 'success' && 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-300',
+            driveImportMessageType === 'info' && 'border-slate-200 bg-slate-50 text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300'
+          )}
+        >
+          <span>{driveImportMessage}</span>
+          <div className="flex items-center gap-2">
+            {canRetryDriveImport && onRetryDriveImport && (
+              <button
+                onClick={onRetryDriveImport}
+                disabled={!!isImportingDrive}
+                className="rounded-md bg-white/70 px-2 py-1 text-xs font-medium hover:bg-white dark:bg-slate-800 dark:hover:bg-slate-700 disabled:opacity-50"
+              >
+                Retry
+              </button>
+            )}
+            {onDismissDriveImportMessage && (
+              <button
+                onClick={onDismissDriveImportMessage}
+                className="rounded-md px-2 py-1 text-xs font-medium hover:bg-white/70 dark:hover:bg-slate-800"
+              >
+                Dismiss
+              </button>
+            )}
+          </div>
+        </div>
+      )}
 
       {owned.length === 0 ? (
         <div className="rounded-xl border-2 border-dashed border-slate-200 dark:border-slate-800 p-12 text-center">

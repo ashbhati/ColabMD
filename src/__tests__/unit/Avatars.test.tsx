@@ -9,10 +9,13 @@ type MockUser = {
     avatar: string
     color: string
   }
+  presence?: {
+    lastActiveAt?: number
+  }
 }
 
 const mockUseOthers = jest.fn<MockUser[], []>(() => [])
-const mockUseSelf = jest.fn(() => null)
+const mockUseSelf = jest.fn<{ id: string; info: { name: string; avatar: string; color: string } } | null, []>(() => null)
 
 jest.mock('../../../liveblocks.config', () => ({
   useOthers: () => mockUseOthers(),
@@ -45,8 +48,8 @@ describe('Avatars', () => {
     render(<Avatars />)
 
     // Only one "A" badge should render (self avatar), plus one "P" badge from others.
-    expect(screen.getByTitle('Priya')).toBeInTheDocument()
-    expect(screen.getByTitle('Ashish (you)')).toBeInTheDocument()
+    expect(screen.getAllByTitle('Priya (active)').length).toBeGreaterThan(0)
+    expect(screen.getByTitle('Ashish (you, active)')).toBeInTheDocument()
     expect(screen.queryByTitle('Ashish')).not.toBeInTheDocument()
   })
 
@@ -62,5 +65,22 @@ describe('Avatars', () => {
     render(<Avatars />)
 
     expect(screen.getByText('+1')).toBeInTheDocument()
+  })
+
+  it('shows idle status when a collaborator has been inactive', () => {
+    mockUseSelf.mockReturnValue(null)
+    mockUseOthers.mockReturnValue([
+      {
+        id: 'idle-user',
+        connectionId: 7,
+        info: { name: 'Idle User', avatar: '', color: '#123456' },
+        presence: { lastActiveAt: Date.now() - 120000 },
+      },
+    ])
+
+    render(<Avatars />)
+
+    expect(screen.getAllByTitle('Idle User (idle)').length).toBeGreaterThan(0)
+    expect(screen.getByText('idle')).toBeInTheDocument()
   })
 })

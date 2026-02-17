@@ -21,6 +21,14 @@ interface Document {
   shared_permission?: string
 }
 
+interface DriveImportFeedback {
+  type: 'info' | 'success' | 'error'
+  message: string
+  retryable: boolean
+  fileId?: string
+  fileName?: string
+}
+
 export default function Dashboard() {
   const { user, loading, session } = useAuth()
   const router = useRouter()
@@ -32,6 +40,7 @@ export default function Dashboard() {
   const [isCreating, setIsCreating] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
   const [isImportingDrive, setIsImportingDrive] = useState(false)
+  const [driveImportFeedback, setDriveImportFeedback] = useState<DriveImportFeedback | null>(null)
 
   const fetchDocuments = useCallback(async () => {
     try {
@@ -137,21 +146,62 @@ export default function Dashboard() {
     }
   }
 
+  const importDriveFile = useCallback(async (fileId: string, fileName?: string) => {
+    setDriveImportFeedback({
+      type: 'info',
+      message: `Importing ${fileName ? `"${fileName}"` : 'selected file'} from Google Drive...`,
+      retryable: false,
+    })
+
+    const response = await fetch('/api/integrations/google-drive/import', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ fileId }),
+    })
+
+    const data = await response.json()
+    if (!response.ok || !data?.documentId) {
+      throw new Error(data?.error || 'Failed to import from Google Drive')
+    }
+
+    setDriveImportFeedback({
+      type: 'success',
+      message: 'Document imported successfully. Opening editor...',
+      retryable: false,
+    })
+    router.push(`/doc/${data.documentId}`)
+  }, [router])
+
   const handleImportFromGoogleDrive = async () => {
     const accessToken = session?.provider_token
     if (!accessToken) {
-      alert('Google session token not found. Please sign out and sign in with Google again.')
+      setDriveImportFeedback({
+        type: 'error',
+        message: 'Google session token not found. Sign out and sign in with Google again.',
+        retryable: false,
+      })
       return
     }
 
     const pickerApiKey = process.env.NEXT_PUBLIC_GOOGLE_API_KEY
     if (!pickerApiKey) {
-      alert('Google Picker is not configured. Missing NEXT_PUBLIC_GOOGLE_API_KEY.')
+      setDriveImportFeedback({
+        type: 'error',
+        message: 'Google Picker is not configured (missing NEXT_PUBLIC_GOOGLE_API_KEY).',
+        retryable: false,
+      })
       return
     }
 
     setIsImportingDrive(true)
+    let selectedFile: { fileId: string; name?: string } | null = null
     try {
+      setDriveImportFeedback({
+        type: 'info',
+        message: 'Opening Google Drive picker...',
+        retryable: false,
+      })
+
       const picked = await openGoogleDriveMarkdownPicker({
         accessToken,
         apiKey: pickerApiKey,
@@ -159,25 +209,46 @@ export default function Dashboard() {
       })
 
       if (!picked) {
+        setDriveImportFeedback({
+          type: 'info',
+          message: 'Google Drive import canceled.',
+          retryable: false,
+        })
         return
       }
 
-      const response = await fetch('/api/integrations/google-drive/import', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fileId: picked.fileId }),
-      })
-
-      const data = await response.json()
-      if (!response.ok || !data?.documentId) {
-        throw new Error(data?.error || 'Failed to import from Google Drive')
-      }
-
-      router.push(`/doc/${data.documentId}`)
+      selectedFile = picked
+      await importDriveFile(picked.fileId, picked.name)
     } catch (error) {
       console.error('Failed to import from Google Drive:', error)
       const message = error instanceof Error ? error.message : 'Unknown error'
-      alert(`Google Drive import failed: ${message}`)
+      setDriveImportFeedback({
+        type: 'error',
+        message: `Google Drive import failed: ${message}`,
+        retryable: !!selectedFile?.fileId,
+        fileId: selectedFile?.fileId,
+        fileName: selectedFile?.name,
+      })
+    } finally {
+      setIsImportingDrive(false)
+    }
+  }
+
+  const handleRetryDriveImport = async () => {
+    if (!driveImportFeedback?.fileId) return
+
+    setIsImportingDrive(true)
+    try {
+      await importDriveFile(driveImportFeedback.fileId, driveImportFeedback.fileName)
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unknown error'
+      setDriveImportFeedback({
+        type: 'error',
+        message: `Google Drive import failed: ${message}`,
+        retryable: true,
+        fileId: driveImportFeedback.fileId,
+        fileName: driveImportFeedback.fileName,
+      })
     } finally {
       setIsImportingDrive(false)
     }
@@ -266,6 +337,11 @@ export default function Dashboard() {
           isCreating={isCreating}
           isUploading={isUploading}
           isImportingDrive={isImportingDrive}
+          driveImportMessage={driveImportFeedback?.message || null}
+          driveImportMessageType={driveImportFeedback?.type}
+          canRetryDriveImport={!!driveImportFeedback?.retryable}
+          onRetryDriveImport={handleRetryDriveImport}
+          onDismissDriveImportMessage={() => setDriveImportFeedback(null)}
         />
       </main>
     </div>

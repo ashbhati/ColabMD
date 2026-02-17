@@ -34,8 +34,11 @@ export function Editor({ initialContent = '', externalContentOverride = null, on
   const isApplyingMarkdownRef = useRef(false)
   const markdownSyncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const modeSwitchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const richToMarkdownTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const lastSyncedMarkdownRef = useRef('')
   const viewModeRef = useRef<'wysiwyg' | 'markdown'>('wysiwyg')
+  const lastEditorHtmlRef = useRef('')
+  const cachedMarkdownFromRichRef = useRef('')
 
   const editor = useEditor({
     extensions: [
@@ -82,6 +85,8 @@ export function Editor({ initialContent = '', externalContentOverride = null, on
       isApplyingMarkdownRef.current = true
       editor.commands.setContent(markdownToHtml(nextMarkdown), { emitUpdate: true })
       lastSyncedMarkdownRef.current = nextMarkdown
+      cachedMarkdownFromRichRef.current = nextMarkdown
+      lastEditorHtmlRef.current = ''
       return true
     } catch {
       setNotification('Failed to parse markdown. Please check syntax.')
@@ -111,6 +116,8 @@ export function Editor({ initialContent = '', externalContentOverride = null, on
     const syncedMarkdown = htmlToMarkdown(externalContentOverride)
     setMarkdownContent(syncedMarkdown)
     lastSyncedMarkdownRef.current = syncedMarkdown
+    cachedMarkdownFromRichRef.current = syncedMarkdown
+    lastEditorHtmlRef.current = externalContentOverride
   }, [editor, externalContentOverride])
 
   // View mode toggle handler
@@ -128,16 +135,18 @@ export function Editor({ initialContent = '', externalContentOverride = null, on
     }
 
     if (newMode === 'markdown') {
+      const editorHtml = editor.getHTML()
+      let nextMarkdown = cachedMarkdownFromRichRef.current
+
+      if (!nextMarkdown || lastEditorHtmlRef.current !== editorHtml) {
+        nextMarkdown = htmlToMarkdown(editorHtml)
+        lastEditorHtmlRef.current = editorHtml
+        cachedMarkdownFromRichRef.current = nextMarkdown
+      }
+
       setViewMode(newMode)
-
-      modeSwitchTimerRef.current = setTimeout(() => {
-        if (viewModeRef.current !== 'markdown') return
-
-        const nextMarkdown = htmlToMarkdown(editor.getHTML())
-        lastSyncedMarkdownRef.current = nextMarkdown
-        setMarkdownContent(nextMarkdown)
-        modeSwitchTimerRef.current = null
-      }, 0)
+      lastSyncedMarkdownRef.current = nextMarkdown
+      setMarkdownContent(nextMarkdown)
       return
     }
 
@@ -149,10 +158,7 @@ export function Editor({ initialContent = '', externalContentOverride = null, on
 
     setViewMode(newMode)
     const pendingMarkdown = markdownContentRef.current
-    modeSwitchTimerRef.current = setTimeout(() => {
-      applyMarkdownToEditor(pendingMarkdown)
-      modeSwitchTimerRef.current = null
-    }, 0)
+    applyMarkdownToEditor(pendingMarkdown)
   }, [applyMarkdownToEditor, editor])
 
   useEffect(() => {
@@ -171,10 +177,28 @@ export function Editor({ initialContent = '', externalContentOverride = null, on
     }
 
     const handleEditorUpdate = () => {
-      if (viewModeRef.current !== 'markdown') return
+      if (viewModeRef.current === 'wysiwyg') {
+        if (richToMarkdownTimerRef.current) {
+          clearTimeout(richToMarkdownTimerRef.current)
+        }
+
+        // Keep a warmed markdown snapshot in the background so mode switches are instant.
+        richToMarkdownTimerRef.current = setTimeout(() => {
+          const currentHtml = editor.getHTML()
+          if (currentHtml === lastEditorHtmlRef.current) return
+          const nextMarkdown = htmlToMarkdown(currentHtml)
+          lastEditorHtmlRef.current = currentHtml
+          cachedMarkdownFromRichRef.current = nextMarkdown
+        }, 160)
+        return
+      }
+
       if (isApplyingMarkdownRef.current) return
 
-      const nextMarkdown = htmlToMarkdown(editor.getHTML())
+      const currentHtml = editor.getHTML()
+      const nextMarkdown = htmlToMarkdown(currentHtml)
+      lastEditorHtmlRef.current = currentHtml
+      cachedMarkdownFromRichRef.current = nextMarkdown
 
       if (nextMarkdown !== markdownContentRef.current) {
         lastSyncedMarkdownRef.current = nextMarkdown
@@ -197,7 +221,7 @@ export function Editor({ initialContent = '', externalContentOverride = null, on
 
     markdownSyncTimerRef.current = setTimeout(() => {
       applyMarkdownToEditor(markdownContentRef.current)
-    }, 80)
+    }, 160)
 
     return () => {
       if (markdownSyncTimerRef.current) {
@@ -210,6 +234,7 @@ export function Editor({ initialContent = '', externalContentOverride = null, on
     return () => {
       if (markdownSyncTimerRef.current) clearTimeout(markdownSyncTimerRef.current)
       if (modeSwitchTimerRef.current) clearTimeout(modeSwitchTimerRef.current)
+      if (richToMarkdownTimerRef.current) clearTimeout(richToMarkdownTimerRef.current)
     }
   }, [])
 

@@ -33,6 +33,7 @@ export function ShareModal({ documentId, isOpen, onClose }: ShareModalProps) {
   const [notice, setNotice] = useState<string | null>(null)
   const [linkShare, setLinkShare] = useState<{ token: string; permission: string } | null>(null)
   const [copied, setCopied] = useState(false)
+  const [copiedInviteId, setCopiedInviteId] = useState<string | null>(null)
 
   useEffect(() => {
     if (isOpen) {
@@ -49,9 +50,11 @@ export function ShareModal({ documentId, isOpen, onClose }: ShareModalProps) {
         const data = await response.json()
         setShares(data.filter((s: Share) => s.user_id))
         setPendingInvites(data.filter((s: Share) => !s.user_id && !!s.invited_email))
-        const link = data.find((s: Share) => s.share_token)
+        const link = data.find((s: Share) => s.share_token && !s.invited_email)
         if (link) {
           setLinkShare({ token: link.share_token, permission: link.permission })
+        } else {
+          setLinkShare(null)
         }
       }
     } catch {
@@ -125,6 +128,7 @@ export function ShareModal({ documentId, isOpen, onClose }: ShareModalProps) {
         method: 'DELETE',
       })
       setShares(shares.filter((s) => s.id !== shareId))
+      setPendingInvites(pendingInvites.filter((s) => s.id !== shareId))
     } catch {
       console.error('Failed to remove share')
     }
@@ -135,6 +139,19 @@ export function ShareModal({ documentId, isOpen, onClose }: ShareModalProps) {
       navigator.clipboard.writeText(`${window.location.origin}/share/${linkShare.token}`)
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
+    }
+  }
+
+  const copyInviteLink = async (invite: Share) => {
+    if (!invite.share_token) return
+
+    try {
+      await navigator.clipboard.writeText(`${window.location.origin}/share/${invite.share_token}`)
+      setCopiedInviteId(invite.id)
+      setNotice(`Invite link copied for ${invite.invited_email}`)
+      setTimeout(() => setCopiedInviteId(null), 2000)
+    } catch {
+      setError('Failed to copy invite link')
     }
   }
 
@@ -307,7 +324,21 @@ export function ShareModal({ documentId, isOpen, onClose }: ShareModalProps) {
                       </p>
                       <p className="text-xs text-slate-500 dark:text-slate-400">Awaiting first sign in</p>
                     </div>
-                    <span className="text-xs text-slate-500 dark:text-slate-400 capitalize">{invite.permission}</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-slate-500 dark:text-slate-400 capitalize">{invite.permission}</span>
+                      <button
+                        onClick={() => copyInviteLink(invite)}
+                        className="rounded-md px-2 py-1 text-xs font-medium text-indigo-600 hover:bg-indigo-50 dark:text-indigo-300 dark:hover:bg-indigo-950 transition-colors"
+                      >
+                        {copiedInviteId === invite.id ? 'Copied' : 'Resend'}
+                      </button>
+                      <button
+                        onClick={() => handleRemoveShare(invite.id)}
+                        className="rounded-md px-2 py-1 text-xs font-medium text-red-600 hover:bg-red-50 dark:text-red-300 dark:hover:bg-red-950 transition-colors"
+                      >
+                        Cancel
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
