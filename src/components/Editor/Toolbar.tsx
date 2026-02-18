@@ -45,7 +45,7 @@ function ToolbarButton({ onClick, isActive, disabled, children, title, shortcut 
   if (!title) return button
 
   return (
-    <Tooltip content={title} shortcut={shortcut}>
+    <Tooltip content={title} shortcut={shortcut} position="top">
       {button}
     </Tooltip>
   )
@@ -376,7 +376,7 @@ export function Toolbar({
       {/* View Mode Toggle */}
       {isCompact ? (
         <div className="flex items-center rounded-md bg-slate-100 p-0.5 dark:bg-slate-800">
-          <Tooltip content="Rich Text View">
+          <Tooltip content="Rich Text View" position="top">
             <button
               onClick={() => onViewModeChange('wysiwyg')}
               className={cn(
@@ -392,7 +392,7 @@ export function Toolbar({
               </svg>
             </button>
           </Tooltip>
-          <Tooltip content="Markdown Source">
+          <Tooltip content="Markdown Source" position="top">
             <button
               onClick={() => onViewModeChange('markdown')}
               className={cn(
@@ -411,7 +411,7 @@ export function Toolbar({
         </div>
       ) : (
         <div className="flex items-center rounded-md bg-slate-100 dark:bg-slate-800 p-0.5">
-          <Tooltip content="Rich Text View">
+          <Tooltip content="Rich Text View" position="top">
             <button
               onClick={() => onViewModeChange('wysiwyg')}
               className={cn(
@@ -424,7 +424,7 @@ export function Toolbar({
               Rich
             </button>
           </Tooltip>
-          <Tooltip content="Markdown Source">
+          <Tooltip content="Markdown Source" position="top">
             <button
               onClick={() => onViewModeChange('markdown')}
               className={cn(
@@ -444,7 +444,7 @@ export function Toolbar({
 
       {/* Save status */}
       {onSave && (
-        <Tooltip content={isSaving ? "Saving..." : "Save document"} shortcut="⌘S">
+        <Tooltip content={isSaving ? "Saving..." : "Save document"} shortcut="⌘S" position="top">
           <button
             onClick={onSave}
             disabled={isSaving}

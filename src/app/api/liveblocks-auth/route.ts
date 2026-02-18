@@ -143,7 +143,7 @@ export async function POST(request: Request) {
 
     // Set permissions based on document access
     if (permission === "write") {
-      session.allow(room, session.FULL_ACCESS);
+      session.allow(room, [...session.FULL_ACCESS, "comments:write"]);
     } else if (permission === "comment") {
       // Allow reading and commenting but not editing the document content
       session.allow(room, ["room:read", "room:presence:write", "comments:write"]);

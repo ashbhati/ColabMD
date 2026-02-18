@@ -17,9 +17,26 @@ const client = createClient({
       return [];
     }
   },
-  resolveMentionSuggestions: async ({ text }) => {
-    // For now, return empty - can be enhanced later to suggest users for @mentions
-    return [];
+  resolveMentionSuggestions: async ({ text, roomId }) => {
+    try {
+      const params = new URLSearchParams();
+      if (roomId) params.set("roomId", roomId);
+      if (text) params.set("text", text);
+
+      const response = await fetch(`/api/users?${params.toString()}`);
+      if (!response.ok) {
+        console.error("Failed to resolve mention suggestions:", response.statusText);
+        return [];
+      }
+
+      const users = await response.json() as Array<{ id?: string }>;
+      return users
+        .map((user) => user.id)
+        .filter((id): id is string => typeof id === "string" && id.length > 0);
+    } catch (error) {
+      console.error("Error resolving mention suggestions:", error);
+      return [];
+    }
   },
 });
 
