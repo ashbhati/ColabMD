@@ -12,6 +12,10 @@ interface ListDocument {
   shared_permission?: 'view' | 'edit' | 'comment'
 }
 
+interface SharedListDocument extends ListDocument {
+  shared_permission: 'view' | 'edit' | 'comment'
+}
+
 function buildPrivateCacheHeaders(maxAgeSeconds: number) {
   return {
     'Cache-Control': `private, max-age=${maxAgeSeconds}, stale-while-revalidate=${maxAgeSeconds * 3}`,
@@ -72,7 +76,7 @@ export async function GET() {
       toListDocument(doc as unknown as Record<string, unknown>)
     )
 
-    const sharedDocuments = (sharedDocs || [])
+    const sharedDocuments: SharedListDocument[] = (sharedDocs || [])
       .map(share => {
         const doc = share.documents as Record<string, unknown> | null
         if (!doc) return null
@@ -81,7 +85,7 @@ export async function GET() {
           shared_permission: share.permission,
         }
       })
-      .filter((doc): doc is ListDocument => !!doc && !!doc.id)
+      .filter((doc): doc is SharedListDocument => !!doc && !!doc.id)
       .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())
 
     const response = NextResponse.json({
