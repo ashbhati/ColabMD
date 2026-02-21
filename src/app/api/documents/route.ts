@@ -25,7 +25,7 @@ function toListDocument(doc: Record<string, unknown>): ListDocument {
     updated_at: String(doc.updated_at ?? new Date().toISOString()),
   }
 
-  if (doc.owner_id !== undefined) out.owner_id = doc.owner_id
+  if (typeof doc.owner_id === 'string') out.owner_id = doc.owner_id
   if (doc.profiles !== undefined) out.profiles = doc.profiles
 
   return out
