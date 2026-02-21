@@ -77,7 +77,9 @@ export async function GET(request: Request) {
         .slice(0, 10)
         .map(({ id, name, avatar }) => ({ id, name, avatar }));
 
-      return NextResponse.json(users);
+      const response = NextResponse.json(users);
+      response.headers.set("Cache-Control", "private, max-age=30, stale-while-revalidate=120");
+      return response;
     }
 
     if (userIds.length === 0) {
@@ -133,7 +135,9 @@ export async function GET(request: Request) {
       };
     });
 
-    return NextResponse.json(users);
+    const response = NextResponse.json(users);
+    response.headers.set("Cache-Control", "private, max-age=60, stale-while-revalidate=180");
+    return response;
   } catch (error) {
     console.error("Users API error:", error);
     return NextResponse.json([]);

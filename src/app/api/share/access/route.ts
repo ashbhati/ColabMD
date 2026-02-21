@@ -33,11 +33,13 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'Document not found' }, { status: 404 })
     }
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       document,
       permission: share.permission,
       invitedEmail: share.invited_email,
     })
+    response.headers.set('Cache-Control', 'public, s-maxage=120, stale-while-revalidate=600')
+    return response
   } catch (error) {
     console.error('Error in GET /api/share/access:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })

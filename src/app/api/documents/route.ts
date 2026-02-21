@@ -3,6 +3,25 @@ import { sanitizeTitle, isValidContentSize } from '@/lib/validation'
 import { NextResponse } from 'next/server'
 import { v4 as uuidv4 } from 'uuid'
 
+function buildPrivateCacheHeaders(maxAgeSeconds: number) {
+  return {
+    'Cache-Control': `private, max-age=${maxAgeSeconds}, stale-while-revalidate=${maxAgeSeconds * 3}`,
+  }
+}
+
+function toListDocument(doc: Record<string, unknown>) {
+  const out: Record<string, unknown> = {
+    id: doc.id,
+    title: doc.title,
+    updated_at: doc.updated_at,
+  }
+
+  if (doc.owner_id !== undefined) out.owner_id = doc.owner_id
+  if (doc.profiles !== undefined) out.profiles = doc.profiles
+
+  return out
+}
+
 // GET /api/documents - List user's documents
 export async function GET() {
   try {
@@ -39,18 +58,31 @@ export async function GET() {
       console.error('Error fetching shared documents:', sharedError)
     }
 
+    // Intentionally keep payload lean for dashboard listing responses.
+    const ownedDocuments = (ownedDocs || []).map((doc) =>
+      toListDocument(doc as unknown as Record<string, unknown>)
+    )
+
     const sharedDocuments = (sharedDocs || [])
-      .map(share => ({
-        ...share.documents,
-        shared_permission: share.permission,
-      }))
+      .map(share => {
+        const doc = share.documents as Record<string, unknown> | null
+        if (!doc) return null
+        return {
+          ...toListDocument(doc),
+          shared_permission: share.permission,
+        }
+      })
       .filter(doc => !!doc?.id)
       .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())
 
-    return NextResponse.json({
-      owned: ownedDocs || [],
+    const response = NextResponse.json({
+      owned: ownedDocuments,
       shared: sharedDocuments,
     })
+    Object.entries(buildPrivateCacheHeaders(20)).forEach(([key, value]) => {
+      response.headers.set(key, value)
+    })
+    return response
   } catch (error) {
     console.error('Error in GET /api/documents:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })

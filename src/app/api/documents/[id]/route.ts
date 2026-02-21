@@ -91,7 +91,9 @@ export async function GET(
       }
     }
 
-    return NextResponse.json(document)
+    const response = NextResponse.json(document)
+    response.headers.set('Cache-Control', 'private, max-age=10, stale-while-revalidate=30')
+    return response
   } catch (error) {
     console.error('Error in GET /api/documents/[id]:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
