@@ -3,17 +3,26 @@ import { sanitizeTitle, isValidContentSize } from '@/lib/validation'
 import { NextResponse } from 'next/server'
 import { v4 as uuidv4 } from 'uuid'
 
+interface ListDocument {
+  id: string
+  title: string
+  updated_at: string
+  owner_id?: string
+  profiles?: unknown
+  shared_permission?: 'view' | 'edit' | 'comment'
+}
+
 function buildPrivateCacheHeaders(maxAgeSeconds: number) {
   return {
     'Cache-Control': `private, max-age=${maxAgeSeconds}, stale-while-revalidate=${maxAgeSeconds * 3}`,
   }
 }
 
-function toListDocument(doc: Record<string, unknown>) {
-  const out: Record<string, unknown> = {
-    id: doc.id,
-    title: doc.title,
-    updated_at: doc.updated_at,
+function toListDocument(doc: Record<string, unknown>): ListDocument {
+  const out: ListDocument = {
+    id: String(doc.id ?? ''),
+    title: String(doc.title ?? 'Untitled'),
+    updated_at: String(doc.updated_at ?? new Date().toISOString()),
   }
 
   if (doc.owner_id !== undefined) out.owner_id = doc.owner_id
@@ -59,11 +68,11 @@ export async function GET() {
     }
 
     // Intentionally keep payload lean for dashboard listing responses.
-    const ownedDocuments = (ownedDocs || []).map((doc) =>
+    const ownedDocuments: ListDocument[] = (ownedDocs || []).map((doc) =>
       toListDocument(doc as unknown as Record<string, unknown>)
     )
 
-    const sharedDocuments = (sharedDocs || [])
+    const sharedDocuments: ListDocument[] = (sharedDocs || [])
       .map(share => {
         const doc = share.documents as Record<string, unknown> | null
         if (!doc) return null
@@ -72,7 +81,7 @@ export async function GET() {
           shared_permission: share.permission,
         }
       })
-      .filter(doc => !!doc?.id)
+      .filter((doc): doc is ListDocument => !!doc && !!doc.id)
       .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())
 
     const response = NextResponse.json({
