@@ -128,6 +128,7 @@ describe('POST /api/liveblocks-auth sharing flows', () => {
     expect(mockAllow).toHaveBeenCalledWith('doc:550e8400-e29b-41d4-a716-446655440000', [
       'room:read',
       'room:presence:write',
+      'comments:read',
       'comments:write',
     ])
   })
@@ -199,6 +200,12 @@ describe('POST /api/liveblocks-auth sharing flows', () => {
 
     expect(response.status).toBe(200)
     expect(body).toEqual({ token: 'mock-liveblocks-token' })
-    expect(mockAllow).toHaveBeenCalledWith('doc:550e8400-e29b-41d4-a716-446655440000', ['room:write', 'comments:write'])
+    expect(mockAllow).toHaveBeenCalledWith('doc:550e8400-e29b-41d4-a716-446655440000', [
+      'room:read',
+      'room:write',
+      'room:presence:write',
+      'comments:read',
+      'comments:write',
+    ])
   })
 })

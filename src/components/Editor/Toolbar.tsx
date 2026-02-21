@@ -3,7 +3,6 @@
 import { Editor } from '@tiptap/react'
 import { useEffect, useRef, useState } from 'react'
 import { cn } from '@/lib/utils'
-import { Tooltip } from '@/components/ui/Tooltip'
 
 interface ToolbarProps {
   editor: Editor
@@ -26,10 +25,14 @@ interface ToolbarButtonProps {
 }
 
 function ToolbarButton({ onClick, isActive, disabled, children, title, shortcut }: ToolbarButtonProps) {
-  const button = (
+  const nativeTitle = title ? `${title}${shortcut ? ` (${shortcut})` : ''}` : undefined
+
+  return (
     <button
       onClick={onClick}
       disabled={disabled}
+      title={nativeTitle}
+      aria-label={title || nativeTitle}
       className={cn(
         'rounded-md p-1.5 transition-all duration-150',
         isActive
@@ -40,14 +43,6 @@ function ToolbarButton({ onClick, isActive, disabled, children, title, shortcut 
     >
       {children}
     </button>
-  )
-
-  if (!title) return button
-
-  return (
-    <Tooltip content={title} shortcut={shortcut} position="top">
-      {button}
-    </Tooltip>
   )
 }
 
@@ -376,67 +371,63 @@ export function Toolbar({
       {/* View Mode Toggle */}
       {isCompact ? (
         <div className="flex items-center rounded-md bg-slate-100 p-0.5 dark:bg-slate-800">
-          <Tooltip content="Rich Text View" position="top">
-            <button
-              onClick={() => onViewModeChange('wysiwyg')}
-              className={cn(
-                'rounded p-1.5 transition-colors',
-                viewMode === 'wysiwyg'
-                  ? 'bg-white text-slate-900 shadow-sm dark:bg-slate-700 dark:text-slate-100'
-                  : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300'
-              )}
-              aria-label="Rich Text View"
-            >
-              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h10" />
-              </svg>
-            </button>
-          </Tooltip>
-          <Tooltip content="Markdown Source" position="top">
-            <button
-              onClick={() => onViewModeChange('markdown')}
-              className={cn(
-                'rounded p-1.5 transition-colors',
-                viewMode === 'markdown'
-                  ? 'bg-white text-slate-900 shadow-sm dark:bg-slate-700 dark:text-slate-100'
-                  : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300'
-              )}
-              aria-label="Markdown Source"
-            >
-              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8l-4 4 4 4m10-8l4 4-4 4M14 4l-4 16" />
-              </svg>
-            </button>
-          </Tooltip>
+          <button
+            onClick={() => onViewModeChange('wysiwyg')}
+            title="Rich Text View"
+            className={cn(
+              'rounded p-1.5 transition-colors',
+              viewMode === 'wysiwyg'
+                ? 'bg-white text-slate-900 shadow-sm dark:bg-slate-700 dark:text-slate-100'
+                : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300'
+            )}
+            aria-label="Rich Text View"
+          >
+            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h10" />
+            </svg>
+          </button>
+          <button
+            onClick={() => onViewModeChange('markdown')}
+            title="Markdown Source"
+            className={cn(
+              'rounded p-1.5 transition-colors',
+              viewMode === 'markdown'
+                ? 'bg-white text-slate-900 shadow-sm dark:bg-slate-700 dark:text-slate-100'
+                : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300'
+            )}
+            aria-label="Markdown Source"
+          >
+            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8l-4 4 4 4m10-8l4 4-4 4M14 4l-4 16" />
+            </svg>
+          </button>
         </div>
       ) : (
         <div className="flex items-center rounded-md bg-slate-100 dark:bg-slate-800 p-0.5">
-          <Tooltip content="Rich Text View" position="top">
-            <button
-              onClick={() => onViewModeChange('wysiwyg')}
-              className={cn(
-                'rounded px-2 py-1 text-xs font-medium transition-colors',
-                viewMode === 'wysiwyg'
-                  ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 shadow-sm'
-                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
-              )}
-            >
-              Rich
-            </button>
-          </Tooltip>
-          <Tooltip content="Markdown Source" position="top">
-            <button
-              onClick={() => onViewModeChange('markdown')}
-              className={cn(
-                'rounded px-2 py-1 text-xs font-medium transition-colors',
-                viewMode === 'markdown'
-                  ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 shadow-sm'
-                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
-              )}
-            >
-              MD
-            </button>
-          </Tooltip>
+          <button
+            onClick={() => onViewModeChange('wysiwyg')}
+            title="Rich Text View"
+            className={cn(
+              'rounded px-2 py-1 text-xs font-medium transition-colors',
+              viewMode === 'wysiwyg'
+                ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 shadow-sm'
+                : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
+            )}
+          >
+            Rich
+          </button>
+          <button
+            onClick={() => onViewModeChange('markdown')}
+            title="Markdown Source"
+            className={cn(
+              'rounded px-2 py-1 text-xs font-medium transition-colors',
+              viewMode === 'markdown'
+                ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 shadow-sm'
+                : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
+            )}
+          >
+            MD
+          </button>
         </div>
       )}
 
@@ -444,37 +435,36 @@ export function Toolbar({
 
       {/* Save status */}
       {onSave && (
-        <Tooltip content={isSaving ? "Saving..." : "Save document"} shortcut="⌘S" position="top">
-          <button
-            onClick={onSave}
-            disabled={isSaving}
-            className={cn(
-              'flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium transition-all duration-150',
-              isSaving
-                ? 'bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-500'
-                : 'bg-indigo-50 text-indigo-600 hover:bg-indigo-100 dark:bg-indigo-950 dark:text-indigo-400 dark:hover:bg-indigo-900'
-            )}
-            aria-label="Save document"
-          >
-            {isSaving ? (
-              <>
-                <svg className="h-3.5 w-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                </svg>
-                {!isCompact && 'Saving...'}
-              </>
-            ) : (
-              <>
-                <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 7a2 2 0 012-2h8l4 4v10a2 2 0 01-2 2H7a2 2 0 01-2-2V7z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5v4h6V5M9 15h6" />
-                </svg>
-                {!isCompact && 'Save'}
-              </>
-            )}
-          </button>
-        </Tooltip>
+        <button
+          onClick={onSave}
+          disabled={isSaving}
+          title={isSaving ? 'Saving...' : 'Save document (Cmd/Ctrl+S)'}
+          className={cn(
+            'flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium transition-all duration-150',
+            isSaving
+              ? 'bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-500'
+              : 'bg-indigo-50 text-indigo-600 hover:bg-indigo-100 dark:bg-indigo-950 dark:text-indigo-400 dark:hover:bg-indigo-900'
+          )}
+          aria-label="Save document"
+        >
+          {isSaving ? (
+            <>
+              <svg className="h-3.5 w-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+              </svg>
+              {!isCompact && 'Saving...'}
+            </>
+          ) : (
+            <>
+              <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 7a2 2 0 012-2h8l4 4v10a2 2 0 01-2 2H7a2 2 0 01-2-2V7z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5v4h6V5M9 15h6" />
+              </svg>
+              {!isCompact && 'Save'}
+            </>
+          )}
+        </button>
       )}
     </div>
   )
