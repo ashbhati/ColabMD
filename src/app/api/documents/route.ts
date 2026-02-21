@@ -72,7 +72,7 @@ export async function GET() {
       toListDocument(doc as unknown as Record<string, unknown>)
     )
 
-    const sharedDocuments: ListDocument[] = (sharedDocs || [])
+    const sharedDocuments = (sharedDocs || [])
       .map(share => {
         const doc = share.documents as Record<string, unknown> | null
         if (!doc) return null
